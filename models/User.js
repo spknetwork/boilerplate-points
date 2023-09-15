@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const schema = mongoose.Schema;
-
 const PointSchema = require('./Point');
 
 const UserSchema = new mongoose.Schema({

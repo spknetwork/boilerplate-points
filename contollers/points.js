@@ -89,8 +89,6 @@ const updateUserPoints = async (req, res) => {
   }
 };
 
-
-
 const getUserPoints = async (req, res) => {
   try {
     const { username } = req.params;
@@ -138,7 +136,6 @@ const getAllUsersPoints = async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
-
 
 module.exports = {
     updateUserPoints,
