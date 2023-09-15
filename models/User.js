@@ -1,17 +1,14 @@
 const mongoose = require('mongoose');
 const schema = mongoose.Schema;
 
-const UserSchema = schema({
-    username: {
-        type: String,
-        unique: true
-    },
-    community: String,
-}, {
-    timestamps: {
-        createdAt: 'created_at',
-        updatedAt: 'updated_at'
-    }
-});
+const PointSchema = require('./Point');
+
+const UserSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    unique: true,
+  },
+  points: [PointSchema.schema]
+}); 
 
 module.exports = mongoose.model('User', UserSchema);

@@ -3,15 +3,14 @@ const User = require('../models/User');
 
 const updateUserPoints = async (req, res) => {
   try {
-    if (!req.body.username || !req.body.community || !req.body.pointType) {
+    const { username, community, pointType } = req.body;
+
+    if (!username || !community || !pointType) {
       return res.status(400).json({
         message: 'Missing required keys: username, community, or pointType',
       });
     }
 
-    const { username, community, pointType } = req.body;
-
-    // Check if the user exists
     let user = await User.findOne({ username });
 
     if (!user) {
@@ -20,11 +19,16 @@ const updateUserPoints = async (req, res) => {
       });
     }
 
-    // Check if the user already has points data, if not, create it
     if (!user.points) {
-      const initialPointsData = {
-        username: username,
-        points: 0,
+      user.points = [];
+    }
+
+    const communityToUpdate = user.points.find((c) => c.communityName === community);
+
+    if (!communityToUpdate) {
+      // we create a commuity that doesn't exist
+      const initialCommunityData = {
+        communityName: community,
         points_by_type: {
           10: 0,
           20: 0,
@@ -36,29 +40,16 @@ const updateUserPoints = async (req, res) => {
           150: 0,
           160: 0,
         },
-        pointsBalance: 0, // Initialize pointsBalance to 0
-        unclaimed_points: 0,
+        pointsBalance: 0,
+        currency: "", //this is for community symbol
+        unclaimedPoints: 0,
       };
-
-      // Update the user with initial points data
-      user = await User.findOneAndUpdate(
-        { username: username },
-        { points: initialPointsData },
-        { new: true }
-      );
+      user.points.push(initialCommunityData);
     }
 
-    // Retrieve points data using the user's _id
-    const points = await Point.findOne({ user: user._id });
+    const updatedCommunity = user.points.find((c) => c.communityName === community);
 
-    // Check if the specified point type exists
-    if (!points.points_by_type.hasOwnProperty(pointType)) {
-      return res.status(400).json({
-        message: 'Invalid pointType',
-      });
-    }
-
-    // Add points to the specified point type
+    // sample points distribution
     const pointsToAdd = {
       "10": 10,
       "20": 20,
@@ -71,35 +62,24 @@ const updateUserPoints = async (req, res) => {
       "160": 160,
     };
 
-    if (pointsToAdd.hasOwnProperty(pointType)) {
-      points.points_by_type[pointType] += pointsToAdd[pointType];
+    if (updatedCommunity.points_by_type.hasOwnProperty(pointType)) {
+      updatedCommunity.points_by_type[pointType] += pointsToAdd[pointType];
     } else {
       console.log("Unspecified point type: no points to claim");
     }
 
-    // Calculate the pointsBalance by summing all values in points_by_type
-    const totalPointsBalance = Object.values(points.points_by_type).reduce(
+    updatedCommunity.pointsBalance = Object.values(updatedCommunity.points_by_type).reduce(
       (acc, val) => acc + val,
       0
     );
 
-    // Update the user's points for the specified point type and pointsBalance
-    await Point.findOneAndUpdate(
-      { user: user._id },
-      { 'points_by_type': points.points_by_type, 'pointsBalance': totalPointsBalance },
-      { new: true }
-    );
+    user = await user.save();
 
-    // Retrieve updated points data
-    const updatedPoints = await Point.findOne({ user: user._id });
-    console.log(updatedPoints);
-
-    let { points_by_type, pointsBalance, currency } = updatedPoints;
-
-    // Respond with the user's data along with the updated points data
     res.status(200).json({
       message: 'Points updated successfully',
-      data: { user, points_by_type, pointsBalance, currency: community + "token" },
+      data: {
+        user
+      },
     });
   } catch (err) {
     console.error(err);
@@ -109,29 +89,59 @@ const updateUserPoints = async (req, res) => {
   }
 };
 
+
+
 const getUserPoints = async (req, res) => {
-    try {
-      const { username } = req.params;
-  
-      const user = await User.findOne({ username });
-      console.log(req.params, user)
-  
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
+  try {
+    const { username } = req.params;
 
-      const points = await Point.findOne({user: user._id})
-      // console.log(points)
+    const user = await User.findOne({ username });
 
-      const { community } = user
-      
-      return res.json({ username, community, points: points });
-    } catch (error) {
-      return res.status(500).json({ error: 'Internal server error' });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
-  };
+
+    const points = user.points;
+
+    const { community } = user;
+
+    return res.json({ username, community, points });
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const getAllUsersPoints = async (req, res) => {
+  try {
+    const userPoints = await User.aggregate([
+      {
+        $unwind: "$points"
+      },
+      {
+        $group: {
+          _id: "$_id",
+          username: { $first: "$username" },
+          totalPoints: { $sum: "$points.points_by_type.10" }
+        }
+      },
+      {
+        $project: {
+          _id: 0, 
+          username: 1,
+          totalPoints: 1
+        }
+      }
+    ]);
+
+    return res.json({ userPoints });
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 
 module.exports = {
     updateUserPoints,
     getUserPoints,
+    getAllUsersPoints
 };
