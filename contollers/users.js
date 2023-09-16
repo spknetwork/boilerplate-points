@@ -28,7 +28,7 @@ const createUser = async (req, res) => {
         user: user._id,
         communityName: community,
         pointsBalance: 0,
-        currency: "",
+        symbol: "",
         unclaimedPoints: 10,
         points_by_type: {
           "10": 10,

@@ -6,7 +6,7 @@ const UserSchema = new mongoose.Schema({
     type: String,
     unique: true,
   },
-  points: [PointSchema.schema]
+  // points: [PointSchema.schema] //Not sure we still need this
 },
 {
   timestamps: {

@@ -37,7 +37,7 @@ const updateUserPoints = async (req, res) => {
           "160": 0,
         },
         pointsBalance: 0,
-        currency: "", // This is for community symbol
+        symbol: "", // This is for community symbol
         unclaimedPoints: 0,
       };
 
@@ -155,9 +155,34 @@ const claimPoints = async (req, res) => {
   }
 };
 
+const getUserPointsByCommunity = async (req, res) => {
+  try {
+    const { community } = req.params;
+
+    const pointsRecords = await Point.find({ communityName: community });
+
+    const userPointsData = pointsRecords.map((pointsRecord) => ({
+      user: pointsRecord.user,
+      community: pointsRecord.communityName,
+      points: pointsRecord.points_by_type,
+    }));
+
+    res.status(200).json({
+      message: 'User points by community retrieved successfully',
+      data: userPointsData,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: 'Something went wrong on our end',
+    });
+  }
+};
+
 module.exports = {
     updateUserPoints,
     getUserPoints,
     getAllUsersPoints,
-    claimPoints
+    claimPoints,
+    getUserPointsByCommunity
 };

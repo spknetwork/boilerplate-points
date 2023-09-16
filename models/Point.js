@@ -7,7 +7,7 @@ const PointSchema = new mongoose.Schema({
   },
   communityName: String,
   pointsBalance: Number,
-  currency: String,
+  symbol: String,
   unclaimedPoints: Number,
   points_by_type: {
     "10": Number,
