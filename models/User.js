@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const schema = mongoose.Schema;
 const PointSchema = require('./Point');
 
 const UserSchema = new mongoose.Schema({
@@ -8,6 +7,12 @@ const UserSchema = new mongoose.Schema({
     unique: true,
   },
   points: [PointSchema.schema]
+},
+{
+  timestamps: {
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+  },
 }); 
 
 module.exports = mongoose.model('User', UserSchema);

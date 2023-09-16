@@ -16,68 +16,55 @@ const createUser = async (req, res) => {
     if (!user) {
       user = new User({
         username,
-        points: [
-          {
-            communityName: community,
-            pointsBalance: 10, 
-            currency: "",
-            unclaimedPoints: 0,
-            points_by_type: {
-              "10": 10, 
-              "20": 0,
-              "30": 0,
-              "100": 0,
-              "110": 0,
-              "120": 0,
-              "130": 0,
-              "150": 0,
-              "160": 0,
-            },
-          },
-        ],
       });
 
       await user.save();
-      res.status(200).json({
-        message: 'User created successfully',
-        data: user,
-      });
-    } else {
-
-      const communityToUpdate = user.points.find((c) => c.communityName === community);
-
-      if (!communityToUpdate) {
-        user.points.push({
-          communityName: community,
-          pointsBalance: 10,
-          currency: "",
-          unclaimedPoints: 0,
-          points_by_type: {
-            "10": 10,
-            "20": 0,
-            "30": 0,
-            "100": 0,
-            "110": 0,
-            "120": 0,
-            "130": 0,
-            "150": 0,
-            "160": 0,
-          },
-        });
-      } else {
-        communityToUpdate.points_by_type["10"] += 10;
-        communityToUpdate.pointsBalance = Object.values(communityToUpdate.points_by_type).reduce((sum, value) => sum + value, 0);
-      }
-
-      user.pointsBalance = user.points.reduce((sum, community) => sum + community.pointsBalance, 0);
-
-      await user.save();
-
-      res.status(200).json({
-        message: 'User updated successfully',
-        data: user,
-      });
     }
+
+    const existingPointsRecord = await Point.findOne({ user: user._id, communityName: community });
+
+    if (!existingPointsRecord) {
+      const pointsRecord = new Point({
+        user: user._id,
+        communityName: community,
+        pointsBalance: 0,
+        currency: "",
+        unclaimedPoints: 10,
+        points_by_type: {
+          "10": 10,
+          "20": 0,
+          "30": 0,
+          "100": 0,
+          "110": 0,
+          "120": 0,
+          "130": 0,
+          "150": 0,
+          "160": 0,
+        },
+        pending_points: {
+          "10": 0,
+          "20": 0,
+          "30": 0,
+          "100": 0,
+          "110": 0,
+          "120": 0,
+          "130": 0,
+          "150": 0,
+          "160": 0,
+        },
+      });
+
+      await pointsRecord.save();
+    } else {
+      existingPointsRecord.points_by_type["10"] += 10;
+      existingPointsRecord.unclaimedPoints += 10;
+      await existingPointsRecord.save();
+    }
+
+    res.status(200).json({
+      message: 'User created successfully',
+      data: user,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json('Something went wrong on our end');
