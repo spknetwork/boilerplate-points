@@ -47,7 +47,7 @@ const createAccountWithKey = async (
       };
       const posting = {
         weight_threshold: 1,
-        account_auths: [["ecency.app", 1]],
+        account_auths: [["spk", 1]], //we should replace with actual account
         key_auths: [[account.postingPublicKey, 1]]
       };
       const ops = [];
