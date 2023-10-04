@@ -10,15 +10,14 @@ const PointSchema = new mongoose.Schema({
   symbol: String,
   unclaimedPoints: Number,
   points_by_type: {
-    "10": Number,
-    "20": Number,
-    "30": Number,
-    "100": Number,
-    "110": Number,
-    "120": Number,
-    "130": Number,
-    "150": Number,
-    "160": Number,
+    posts: Number,
+    comments: Number,
+    upvote: Number,
+    reblog: Number,
+    login: Number,
+    delegation: Number,
+    community: Number,
+    checking: Number,
   },
 }, {
   timestamps: {

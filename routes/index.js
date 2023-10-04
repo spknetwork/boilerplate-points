@@ -1,5 +1,5 @@
 const express = require('express');
-const { createUser, getAllUsers } = require('../contollers/users');
+const { createUser, createHiveAccount, getAllUsers } = require('../contollers/users');
 const { transferPoints, getTransactionHistory, getCommunityTransactions } = require('../contollers/transactions');
 const { 
     updateUserPoints, 
@@ -8,11 +8,13 @@ const {
     claimPoints, 
     getUserPointsByCommunity 
 } = require('../contollers/points');
+const { getPointsHistory } = require('../contollers/pointsHistory');
 
 const router = express.Router();
 
 // User Routes
 router.post('/users', createUser);
+router.post('/create-hive-account', createHiveAccount);
 router.get('/users', getAllUsers);
 
 //Points Route
@@ -26,5 +28,7 @@ router.get('/community/:community', getUserPointsByCommunity);
 router.post('/transactions/transfer', transferPoints);
 router.get('/transactions/history', getTransactionHistory);
 router.get('/transactions/community', getCommunityTransactions);
+
+router.get('/points-history/:username', getPointsHistory)
 
 module.exports = router;

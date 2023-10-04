@@ -26,18 +26,17 @@ const updateUserPoints = async (req, res) => {
         user: user._id,
         communityName: community,
         points_by_type: {
-          "10": 0,
-          "20": 0,
-          "30": 0,
-          "100": 0,
-          "110": 0,
-          "120": 0,
-          "130": 0,
-          "150": 0,
-          "160": 0,
+          posts: 0,
+          comments: 0,
+          upvote: 0,
+          reblog: 0,
+          login: 0,
+          delegation: 0,
+          community: 0,
+          checking: 0, 
         },
         pointsBalance: 0,
-        symbol: "", // This is for community symbol
+        symbol: "", // community token symbol
         unclaimedPoints: 0,
       };
 
@@ -45,15 +44,14 @@ const updateUserPoints = async (req, res) => {
     }
 
     const pointsToAdd = {
-      "10": 10,
-      "20": 20,
-      "30": 30,
-      "100": 100,
-      "110": 110,
-      "120": 120,
-      "130": 130,
-      "150": 150,
-      "160": 160,
+      posts: 10,
+      comments: 20,
+      upvote: 30,
+      reblog: 100,
+      login: 110,
+      delegation: 120,
+      community: 130,
+      checking: 150,
     };
 
     if (pointsToAdd.hasOwnProperty(pointType)) {
