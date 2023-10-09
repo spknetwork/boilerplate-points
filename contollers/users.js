@@ -2,6 +2,7 @@ const Point = require('../models/Point');
 const User = require('../models/User');
 const { getAccount, createAccountWithKey, createAccountKeys } = require("../hive/hive")
 
+// This migt not be relevant anymore since we are not creating an already existing account, we alreay implemented keychain login
 const createUser = async (req, res) => {
   try {
     const { username, community } = req.body;
@@ -178,7 +179,6 @@ const createHiveAccount = async (req, res) => {
    console.log(error)
   }
 };
-
 
 const getAllUsers = async (req, res) => {
   try {

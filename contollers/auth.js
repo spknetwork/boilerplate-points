@@ -1,0 +1,177 @@
+const { differenceInMinutes } = require('date-fns');
+const JWT = require("jsonwebtoken")
+const { cryptoUtils, Signature } = require('@hiveio/dhive');
+
+const { getAccounts } = require("../hive/hive");
+const Point = require('../models/Point');
+
+const User = require("../models/User")
+
+const keychainAuth = async (req, res) => {
+    try {
+      const {
+        username, ts, sig, community
+      } = req.query;
+
+      if (process.env.NODE_ENV === 'production') {
+        const timeDifference = differenceInMinutes(Date.now(), ts);
+        if (timeDifference >= 3) {
+          return res.status(409).send(
+            'Invalid timestamp. Please check that your system clock is correctly set.',
+          );
+        }
+      }
+      const [account] = await getAccounts([username]);
+
+      let validSignature = false;
+
+      const publicKey = Signature.fromString(sig)
+        .recover(cryptoUtils.sha256(`${username}${ts}`))
+        .toString();
+
+      const thresholdPosting = account.posting.weight_threshold;
+      const thresholdActive = account.active.weight_threshold;
+
+      const authorizedAccountsPosting = new Map(
+        account.posting.account_auths,
+      );
+      const authorizedAccountsActive = new Map(account.active.account_auths);
+
+      // Trying to validate using posting key
+      if (!validSignature) {
+        for (let i = 0; i < account.posting.key_auths.length; i += 1) {
+          const auth = account.posting.key_auths[i];
+
+          if (auth[0] === publicKey && auth[1] >= thresholdPosting) {
+            validSignature = true;
+            break;
+          }
+        }
+      }
+
+      // Trying to validate using active key
+      if (!validSignature) {
+        for (let i = 0; i < account.active.key_auths.length; i += 1) {
+          const auth = account.active.key_auths[i];
+
+          if (auth[0] === publicKey && auth[1] >= thresholdActive) {
+            validSignature = true;
+            break;
+          }
+        }
+      }
+
+      // Trying to validate using posting authority
+      if (!validSignature && authorizedAccountsPosting.size > 0) {
+        let accountsData = await hiveClient.database.getAccounts(
+          Array.from(authorizedAccountsPosting.keys()),
+        );
+
+        accountsData = accountsData.map((a) => a.posting.key_auths[0]);
+
+        for (let i = 0; i < accountsData.length; i += 1) {
+          const auth = accountsData[i];
+
+          if (auth[0] === publicKey && auth[1] >= thresholdPosting) {
+            validSignature = true;
+            break;
+          }
+        }
+      }
+
+      // Trying to validate using active authority
+      if (!validSignature && authorizedAccountsActive.size > 0) {
+        let accountsData = await hiveClient.database.getAccounts(
+          Array.from(authorizedAccountsActive.keys()),
+        );
+
+        accountsData = accountsData.map((a) => a.active.key_auths[0]);
+
+        for (let i = 0; i < accountsData.length; i += 1) {
+          const auth = accountsData[i];
+
+          if (auth[0] === publicKey && auth[1] >= thresholdActive) {
+            validSignature = true;
+            break;
+          }
+        }
+      }
+      if (validSignature) {
+        const user = await User.findOneAndUpdate(
+          { username },
+          {
+            $setOnInsert: {
+              username,
+            },
+          },
+          { upsert: true, new: true, setDefaultsOnInsert: true },
+        )
+          // .select('-_id')
+          // .lean();
+    
+          console.log(user)
+        const token = JWT.sign(
+          {
+            username: username,
+            userId: user._id,
+          },
+          process.env.JWT_SECRET,
+          {
+            expiresIn: '12h',
+          },
+        );
+
+
+      const existingPointsRecord = await Point.findOne({ user: user._id, communityName: community });
+
+      if (!existingPointsRecord) {
+        const pointsRecord = new Point({
+          user: user._id,
+          communityName: community,
+          pointsBalance: 0,
+          symbol: "",
+          unclaimedPoints: 10,
+          points_by_type: {
+            posts: 0,
+            comments: 0,
+            upvote: 0,
+            reblog: 0,
+            login: 0, 
+            delegation: 0,
+            community: 0,
+            checking: 0,
+          },
+          pending_points: {
+            posts: 0,
+            comments: 0,
+            upvote: 0,
+            reblog: 0,
+            login: 0,
+            delegation: 0,
+            community: 0,
+            checking: 0,
+          },
+        });
+
+        await pointsRecord.save();
+      } else {
+        existingPointsRecord.points_by_type.login += 10; // Award login points
+        existingPointsRecord.unclaimedPoints += 10;
+        await existingPointsRecord.save();
+      }
+
+        response = {
+          ...user,
+          token,
+        };
+
+        return res.status(200).json({success: true, response});
+      }
+    } catch (e) {
+      console.log(e.message);
+      return res.status(501).json({success: false, msg: "something went wrong"});
+    }
+
+}
+
+  module.exports = { keychainAuth };

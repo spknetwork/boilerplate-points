@@ -1,4 +1,4 @@
-const { Client, PrivateKey, RCAPI, utils } = require("@hiveio/dhive");
+const { Client, PrivateKey } = require("@hiveio/dhive");
 const SERVERS = require("./servers");
 const {  getPrivateKeys, generatePassword } = require("./key-handler")
 
@@ -82,7 +82,6 @@ const createAccountWithKey = async (
 const createAccountKeys = async (username) => {
   try {
     const masterPassword = await generatePassword(32);
-    // console.log("msp", masterPassword)
     const keys = getPrivateKeys(
       username,
       masterPassword
@@ -99,9 +98,9 @@ const createAccountKeys = async (username) => {
   }
 };
   
-
   module.exports = {
     getAccount,
+    getAccounts,
     createAccountWithKey,
     createAccountKeys
   }
