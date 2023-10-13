@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+//needs checking again
 const pointsHistorySchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,

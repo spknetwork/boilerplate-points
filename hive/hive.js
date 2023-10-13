@@ -8,6 +8,9 @@ const client = new Client(SERVERS, {
   consoleOnFailover: true
 });
 
+const bridgeApiCall = (endpoint, params) =>
+client.call("bridge", endpoint, params);
+
 const getAccounts = async (usernames) => await client.database.getAccounts(usernames);
   
 const getAccount = async (username) => await getAccounts([username]).then((resp) => resp[0]);
@@ -97,10 +100,23 @@ const createAccountKeys = async (username) => {
     console.log(err)
   }
 };
+
+const getCommunity = (name, observer = "") => {
+  return bridgeApiCall("get_community", { name, observer })
+    .then(result => {
+      console.log(result)
+      return result;
+    })
+    .catch(error => {
+      console.error(error);
+      return null;
+    });
+};
   
   module.exports = {
     getAccount,
     getAccounts,
     createAccountWithKey,
-    createAccountKeys
+    createAccountKeys,
+    getCommunity
   }

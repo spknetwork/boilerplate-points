@@ -11,37 +11,16 @@ const updateUserPoints = async (req, res) => {
       });
     }
 
-    let user = await User.findOne({ username });
-
-    if (!user) {
-      return res.status(404).json({
-        message: 'User not found',
-      });
-    }
-
-    let communityToUpdate = await Point.findOne({ user: user._id, communityName: community });
-
-    if (!communityToUpdate) {
-      const initialCommunityData = {
-        user: user._id,
-        communityName: community,
-        points_by_type: {
-          posts: 0,
-          comments: 0,
-          upvote: 0,
-          reblog: 0,
-          login: 0,
-          delegation: 0,
-          community: 0,
-          checking: 0, 
-        },
-        pointsBalance: 0,
-        symbol: "", // community token symbol
-        unclaimedPoints: 0,
-      };
-
-      communityToUpdate = new Point(initialCommunityData);
-    }
+    const pointsLimitations = {
+      posts: 2,
+      comments: 3,
+      upvote: 5,
+      reblog: 2,
+      login: 2,
+      delegation: 1,
+      community: 4,
+      checking: 5,
+    };
 
     const pointsToAdd = {
       posts: 10,
@@ -54,22 +33,67 @@ const updateUserPoints = async (req, res) => {
       checking: 150,
     };
 
-    if (pointsToAdd.hasOwnProperty(pointType)) {
-      communityToUpdate.points_by_type[pointType] += pointsToAdd[pointType];
-      communityToUpdate.unclaimedPoints += pointsToAdd[pointType];
-    } else {
-      console.log("Invalid point type: no points to add");
+    if (!pointsLimitations.hasOwnProperty(pointType)) {
       return res.status(400).json({
-        message: 'Invalid point type: no points to add',
+        message: 'Invalid point type',
       });
     }
+
+    let user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found',
+      });
+    }
+
+    let communityToUpdate = await Point.findOne({
+      user: user._id,
+      communityName: community,
+    });
+
+    if (!communityToUpdate) {
+      const initialCommunityData = {
+        user: user._id,
+        communityName: community,
+        points_by_type: {
+          posts: { points: 0, awarded_timestamps: [] },
+          comments: { points: 0, awarded_timestamps: [] },
+          upvote: { points: 0, awarded_timestamps: [] },
+          reblog: { points: 0, awarded_timestamps: [] },
+          login: { points: 0, awarded_timestamps: [] },
+          delegation: { points: 0, awarded_timestamps: [] },
+          community: { points: 0, awarded_timestamps: [] },
+          checking: { points: 0, awarded_timestamps: [] },
+        },
+        pointsBalance: 0,
+        symbol: '', // community token symbol
+        unclaimedPoints: 0,
+      };
+
+      communityToUpdate = new Point(initialCommunityData);
+    }
+
+    const currentDate = Date.now();
+    const lastAwardedTimestamps = communityToUpdate.points_by_type[pointType].awarded_timestamps;
+
+    // Check if the user has reached the daily limit for the specified point type
+    if (lastAwardedTimestamps.length >= pointsLimitations[pointType]) {
+      return res.status(400).json({
+        message: `Daily limit reached for ${pointType} points`,
+      });
+    }
+
+    communityToUpdate.points_by_type[pointType].points += pointsToAdd[pointType];
+    communityToUpdate.unclaimedPoints += pointsToAdd[pointType];
+    communityToUpdate.points_by_type[pointType].awarded_timestamps.push(currentDate);
 
     await communityToUpdate.save();
 
     res.status(200).json({
       message: 'Points updated successfully',
       data: {
-        points: communityToUpdate
+        points: communityToUpdate,
       },
     });
   } catch (err) {
@@ -132,9 +156,18 @@ const claimPoints = async (req, res) => {
       return res.status(404).json({
         message: 'Community not found for this user',
       });
-    };
+    }
 
-    pointsRecord.pointsBalance = Object.values(pointsRecord.points_by_type).reduce((acc, val) => acc + val, 0);
+    const points_by_type = pointsRecord.points_by_type;
+    let totalPoints = 0;
+
+    for (const pointType in points_by_type) {
+      if (points_by_type.hasOwnProperty(pointType)) {
+        totalPoints += points_by_type[pointType].points;
+      }
+    }
+
+    pointsRecord.pointsBalance = totalPoints;
     pointsRecord.unclaimedPoints = 0;
 
     await pointsRecord.save();

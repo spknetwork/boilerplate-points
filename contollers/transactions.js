@@ -119,7 +119,7 @@ const getTransactionHistory = async (req, res) => {
 
 const getCommunityTransactions = async (req, res) => {
     try {
-      const { community } = req.query;
+      const { community } = req.params;
   
       if (!community) {
         return res.status(400).json({

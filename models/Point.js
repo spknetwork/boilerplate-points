@@ -10,19 +10,46 @@ const PointSchema = new mongoose.Schema({
   symbol: String,
   unclaimedPoints: Number,
   points_by_type: {
-    posts: Number,
-    comments: Number,
-    upvote: Number,
-    reblog: Number,
-    login: Number,
-    delegation: Number,
-    community: Number,
-    checking: Number,
+    posts: {
+      points: Number,
+      awarded_timestamps: [Number],
+    },
+    comments: {
+      points: Number,
+      awarded_timestamps: [Number],
+    },
+    upvote: {
+      points: Number,
+      awarded_timestamps: [Number],
+    },
+    reblog: {
+      points: Number,
+      awarded_timestamps: [Number],
+    },
+    login: {
+      points: Number,
+      awarded_timestamps: [Number],
+    },
+    delegation: {
+      points: Number,
+      awarded_timestamps: [Number],
+    },
+    community: {
+      points: Number,
+      awarded_timestamps: [Number],
+    },
+    checking: {
+      points: Number,
+      awarded_timestamps: [Number],
+    },
   },
-}, {
-  timestamps: {
-    createdAt: 'created_at',
-    updatedAt: 'updated_at',
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
   },
 });
 
