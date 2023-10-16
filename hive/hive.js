@@ -1,12 +1,6 @@
-const { Client, PrivateKey } = require("@hiveio/dhive");
-const SERVERS = require("./servers");
-const {  getPrivateKeys, generatePassword } = require("./key-handler")
-
-const client = new Client(SERVERS, {
-  timeout: 3000,
-  failoverThreshold: 3,
-  consoleOnFailover: true
-});
+const { PrivateKey } = require("@hiveio/dhive");
+const {  getPrivateKeys, generatePassword } = require("./key-handler");
+const client = require("./client")
 
 const bridgeApiCall = (endpoint, params) =>
 client.call("bridge", endpoint, params);

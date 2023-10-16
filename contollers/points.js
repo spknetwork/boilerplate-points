@@ -1,5 +1,6 @@
 const Point = require('../models/Point');
 const User = require('../models/User');
+const PointsHistory = require('../models/PointsHistory');
 
 const updateUserPoints = async (req, res) => {
   try {
@@ -77,12 +78,19 @@ const updateUserPoints = async (req, res) => {
     const currentDate = Date.now();
     const lastAwardedTimestamps = communityToUpdate.points_by_type[pointType].awarded_timestamps;
 
-    // Check if the user has reached the daily limit for the specified point type
     if (lastAwardedTimestamps.length >= pointsLimitations[pointType]) {
       return res.status(400).json({
         message: `Daily limit reached for ${pointType} points`,
       });
     }
+    const pointsAwarded = pointsToAdd[pointType];
+
+    await PointsHistory.create({
+      user: user._id,
+      community,
+      operationType: pointType,
+      pointsEarned: pointsAwarded,
+    });
 
     communityToUpdate.points_by_type[pointType].points += pointsToAdd[pointType];
     communityToUpdate.unclaimedPoints += pointsToAdd[pointType];

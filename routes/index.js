@@ -9,11 +9,15 @@ const {
     getUserPointsByCommunity 
 } = require('../contollers/points');
 const { getPointsHistory } = require('../contollers/pointsHistory');
-const { keychainAuth } = require('../contollers/auth');
+const { keychainAuth, keysAuth } = require('../contollers/auth');
+const { registerCommunity } = require('../contollers/communities');
 const  authenticateToken  = require("../middleware/auth");
 const { cloneRepository, createEnvVariables, checkDirectory, checkEnvFile, runDocker } = require("../contollers/communitySetup")
 
 const router = express.Router();
+
+//Key login
+router.post("/auth/login-key", keysAuth)
 
 //Keychain login
 router.get("/auth/login", keychainAuth);
@@ -46,5 +50,6 @@ router.post('/create-variables', createEnvVariables);
 router.get('/check-directory', checkDirectory);
 router.get('/check-env-file', checkEnvFile);
 router.get('/run-docker', runDocker);
+router.post('/register-community', registerCommunity);
 
 module.exports = router;
