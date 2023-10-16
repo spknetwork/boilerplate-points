@@ -11,6 +11,7 @@ const {
 const { getPointsHistory } = require('../contollers/pointsHistory');
 const { keychainAuth, keysAuth } = require('../contollers/auth');
 const { registerCommunity } = require('../contollers/communities');
+const { loginUser, registerUser } = require('../contollers/offchainUsers');
 const  authenticateToken  = require("../middleware/auth");
 const { cloneRepository, createEnvVariables, checkDirectory, checkEnvFile, runDocker } = require("../contollers/communitySetup")
 
@@ -23,7 +24,9 @@ router.post("/auth/login-key", keysAuth)
 router.get("/auth/login", keychainAuth);
 
 // User Routes
-router.post('/users', createUser); //note needed anymore
+router.post('/users', createUser); //not needed anymore
+router.post('/offchain-users/register', registerUser); //not needed anymore
+router.post('/offchain-users/login', loginUser); //not needed anymore
 router.post('/create-hive-account', createHiveAccount);
 router.get('/users', getAllUsers);
 

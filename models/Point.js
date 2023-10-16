@@ -1,9 +1,9 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const PointSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
   },
   communityName: String,
   pointsBalance: Number,
@@ -53,4 +53,4 @@ const PointSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model('Point', PointSchema);
+module.exports = mongoose.model("Point", PointSchema);

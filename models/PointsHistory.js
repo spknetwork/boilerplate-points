@@ -1,9 +1,9 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const pointsHistorySchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
   },
   community: String,
   operationType: String,
@@ -14,4 +14,4 @@ const pointsHistorySchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model('PointsHistory', pointsHistorySchema);
+module.exports = mongoose.model("PointsHistory", pointsHistorySchema);
