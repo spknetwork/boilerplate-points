@@ -8,7 +8,6 @@ const createUser = async (req, res) => {
     const { username, community } = req.body;
 
     const isHiveAccount = await getAccount(username)
-    console.log(isHiveAccount)
 
     if (!isHiveAccount) {
       return res.status(404).json({

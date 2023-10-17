@@ -24,8 +24,6 @@ const createAccountWithKey = async (
         ...pub_keys,
         active: false
       };
-
-      console.log("ACCOUNT", account)
   
       let tokens = await client.database.getAccounts([creator_account]);
       tokens = tokens[0]?.pending_claimed_accounts;
@@ -98,7 +96,6 @@ const createAccountKeys = async (username) => {
 const getCommunity = (name, observer = "") => {
   return bridgeApiCall("get_community", { name, observer })
     .then(result => {
-      console.log(result)
       return result;
     })
     .catch(error => {

@@ -13,7 +13,6 @@ async function authenticateToken (req, res, next) {
 
   try {
     const user = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(user)
 
     const authUser = await User.findOne({ _id: user.userId });
     
