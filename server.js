@@ -12,7 +12,7 @@ app.use(express.json());
 //should be remove
 
 app.use(cors({
-    origin: process.env.CLIENT_URL,
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
 }));
 
 app.use(express.urlencoded({extended: true}));
