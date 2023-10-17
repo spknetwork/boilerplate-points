@@ -10,10 +10,9 @@ const port = process.env.PORT || 4000;
 app.use(express.json());
 
 //should be remove
-const urls = "https://breakaway-page-setup-git-create-f86e40-adesojisouljays-projects.vercel.app" || "https://breakaway-project-setup.onrender.com/"
 
 app.use(cors({
-    origin: urls,
+    origin: process.env.CLIENT_URL,
 }));
 
 app.use(express.urlencoded({extended: true}));
