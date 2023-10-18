@@ -11,6 +11,7 @@ app.use(express.json());
 
 const allowedOrigins = [
   process.env.CLIENT_URL,
+  "https://breakaway-page-setup.vercel.app",
   "http://localhost:3000",
   "http://localhost:3001",
   "http://localhost:3002",
