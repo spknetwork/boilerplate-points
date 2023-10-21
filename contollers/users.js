@@ -180,6 +180,76 @@ const createHiveAccount = async (req, res) => {
   }
 };
 
+const createHiveAccountKc = async (req, res) => {
+  try {
+    const { username, community } = req.body;
+    
+    if (!username || !community) {
+      return res.status(400).json({
+        message: 'Missing required keys: username or community',
+      });
+    };
+    
+    let user = await User.findOne({ username });
+
+    if(user) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "User has already been created"
+      })
+    }
+
+      if (!user) {
+        user = new User({
+          username,
+        });
+
+        await user.save();
+      }
+
+      const currentDate = Date.now();
+
+      const existingPointsRecord = await Point.findOne({
+        user: user._id,
+        communityName: community,
+      });
+
+      if (!existingPointsRecord) {
+        const pointsRecord = new Point({
+          user: user._id,
+          communityName: community,
+          pointsBalance: 0,
+          symbol: "",
+          unclaimedPoints: 10,
+          points_by_type: {
+            posts: { points: 0, awarded_timestamps: [] },
+            comments: { points: 0, awarded_timestamps: [] },
+            upvote: { points: 0, awarded_timestamps: [] },
+            reblog: { points: 0, awarded_timestamps: [] },
+            login: { points: 10, awarded_timestamps: [currentDate] },
+            delegation: { points: 0, awarded_timestamps: [] },
+            community: { points: 0, awarded_timestamps: [] },
+            checking: { points: 0, awarded_timestamps: [] },
+          }
+        });
+          console.log(pointsRecord.pending_points)
+        await pointsRecord.save();
+      } else {
+        existingPointsRecord.points_by_type.login.points += 10;
+        existingPointsRecord.unclaimedPoints += 10;
+        await existingPointsRecord.save();
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Hive account has been created successfully",
+      });
+   
+  } catch (error) {
+   console.log(error)
+  }
+};
+
 const getAllUsers = async (req, res) => {
   try {
     const users = await User.find();
@@ -193,5 +263,6 @@ const getAllUsers = async (req, res) => {
 module.exports = {
     createUser,
     getAllUsers,
-    createHiveAccount
+    createHiveAccount,
+    createHiveAccountKc
 }

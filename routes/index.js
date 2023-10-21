@@ -1,5 +1,5 @@
 const express = require('express');
-const { createUser, createHiveAccount, getAllUsers } = require('../contollers/users');
+const { createUser, createHiveAccount, getAllUsers, createHiveAccountKc } = require('../contollers/users');
 const { transferPoints, getTransactionHistory, getCommunityTransactions } = require('../contollers/transactions');
 const { 
     updateUserPoints, 
@@ -23,9 +23,13 @@ router.post("/auth/login-key", keysAuth)
 //Keychain login
 router.get("/auth/login", keychainAuth);
 
+//registerKeychain
+router.post("/signup-keychain", createHiveAccountKc);
+
+
 // User Routes
 router.post('/users', createUser); //not needed anymore
-router.post('/offchain-users/register', registerUser); //not needed anymore
+router.post('/offchain-users/register', registerUser);
 router.post('/offchain-users/login', loginUser); //not needed anymore
 router.post('/create-hive-account', createHiveAccount);
 router.get('/users', getAllUsers);
