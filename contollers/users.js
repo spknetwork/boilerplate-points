@@ -182,7 +182,7 @@ const createHiveAccount = async (req, res) => {
 
 const createHiveAccountKc = async (req, res) => {
   try {
-    const { username, community } = req.body;
+    const { username, community, referral, email } = req.body;
     
     if (!username || !community) {
       return res.status(400).json({
@@ -202,6 +202,8 @@ const createHiveAccountKc = async (req, res) => {
       if (!user) {
         user = new User({
           username,
+          email,
+          referral
         });
 
         await user.save();
