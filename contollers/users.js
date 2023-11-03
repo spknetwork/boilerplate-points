@@ -234,7 +234,6 @@ const createHiveAccountKc = async (req, res) => {
             checking: { points: 0, awarded_timestamps: [] },
           }
         });
-          console.log(pointsRecord.pending_points)
         await pointsRecord.save();
       } else {
         existingPointsRecord.points_by_type.login.points += 10;

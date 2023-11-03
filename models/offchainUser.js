@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const offchainUserSchema = new mongoose.Schema({
-  username: {
+  solanaWalletAddress: {
     type: String,
     required: true,
     unique: true,
@@ -12,10 +12,6 @@ const offchainUserSchema = new mongoose.Schema({
     unique: true,
   },
   password: {
-    type: String,
-    required: true,
-  },
-  solanaWalletAddress: {
     type: String,
     required: true,
   },
