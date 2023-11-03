@@ -10,7 +10,6 @@ const port = process.env.PORT || 4000;
 app.use(express.json());
 
 const allowedOrigins = [
-  process.env.CLIENT_URL,
   "https://breakaway-page-setup.vercel.app",
   "http://localhost:3000",
   "http://localhost:3001",
