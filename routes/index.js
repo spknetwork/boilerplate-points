@@ -11,7 +11,7 @@ const {
 const { getPointsHistory } = require('../contollers/pointsHistory');
 const { keychainAuth, keysAuth } = require('../contollers/auth');
 const { registerCommunity } = require('../contollers/communities');
-const { loginUser, registerUser } = require('../contollers/offchainUsers');
+const { loginUser, registerUser, checkSolBalance} = require('../contollers/offchainUsers');
 const  authenticateToken  = require("../middleware/auth");
 const { cloneRepository, createEnvVariables, checkDirectory, checkEnvFile, runDocker } = require("../contollers/communitySetup")
 
@@ -22,6 +22,7 @@ router.post("/auth/login-key", keysAuth)
 
 //Keychain login
 router.get("/auth/login", keychainAuth);
+router.get("/sol-bal/:address", checkSolBalance);
 
 //registerKeychain
 router.post("/signup-keychain", createHiveAccountKc);

@@ -4,23 +4,46 @@ const PointsHistory = require("../models/PointsHistory");
 const Point = require("../models/Point");
 const offchainUser = require("../models/offchainUser");
 
+const solanaWeb3 = require('@solana/web3.js');
+
+const connection = new solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
+
+const validateAddress = async (address)=> {
+  try {
+    const valid = new solanaWeb3.PublicKey(address);
+    if (valid) return true;
+  } catch (error) {
+    console.log(error)
+    if(error) return false;
+  }
+}
 
 const registerUser = async (req, res) => {
   try {
-    const { username, email, password, solanaWalletAddress } = req.body;
+    const { email, password, solanaWalletAddress } = req.body;
 
-    const existingUser = await offchainUser.findOne({ username });
+    if (!email || !password || !solanaWalletAddress) {
+      return res.status(400).json({ success: false, message: "Some parameter missing" });
+    }
+    
+    const isAddressValid = await validateAddress(solanaWalletAddress);
+    console.log("isAddressValid", isAddressValid);
+    if (!isAddressValid) {
+      return res.status(404).json({ success: false, message: "Inavlid Solana address provided" });
+    }
+
+    const existingUser = await offchainUser.findOne({ solanaWalletAddress });
 
     if (existingUser) {
       return res.status(400).json({
-        message: "User with this username already exists.",
+        success: false,
+        message: "Address already registered.",
       });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = new offchainUser({
-      username,
       email,
       password: hashedPassword,
       solanaWalletAddress,
@@ -29,15 +52,15 @@ const registerUser = async (req, res) => {
     await user.save();
 
     res.status(200).json({
+      success: true,
       message: "User created successfully",
       data: user,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json("Something went wrong on our end");
+    console.log(err);
+    res.status(500).json({ success: false, message: "Something went wrong on our end" });
   }
 };
-
 
 const loginUser = async (req, res) => {
   try {
@@ -129,4 +152,24 @@ const loginUser = async (req, res) => {
   }
 };
 
-module.exports ={ registerUser, loginUser }
+const checkSolBalance = async (req, res) => {
+  try {
+    const { address } = req.params;
+    console.log(address)
+    
+    if(!address) {
+      console.log("no address provided")
+    return res.status(400).json({success: false, message: "Address is required"})
+    }
+
+    const balance = await connection.getBalance(new solanaWeb3.PublicKey(address));
+    const solBalance = balance / solanaWeb3.LAMPORTS_PER_SOL;
+
+    return res.status(200).json({success:true, balance: solBalance });
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json(error);
+  }
+};
+
+module.exports ={ registerUser, loginUser, checkSolBalance }
