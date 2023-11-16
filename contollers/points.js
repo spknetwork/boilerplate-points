@@ -13,8 +13,8 @@ const updateUserPoints = async (req, res) => {
     }
 
     const pointsLimitations = {
-      posts: 2,
-      comments: 3,
+      posts: 20,
+      comments: 30,
       upvote: 5,
       reblog: 2,
       login: 2,
@@ -114,15 +114,24 @@ const updateUserPoints = async (req, res) => {
 
 const getUserPoints = async (req, res) => {
   try {
-    const { username } = req.params;
+    const { username, community } = req.query;
+    console.log(username, community)
 
     const user = await User.findOne({ username });
+    console.log(user)
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const userPoints = await Point.find({ user: user._id });
+    const userPoints = await Point.find({
+      user: user._id,
+      communityName: community,
+    });
+
+    if(userPoints.length === 0) {
+      return res.status(404).json({ error: 'Community not found for this user' });
+    }
 
     return res.json({ userPoints });
   } catch (error) {

@@ -37,10 +37,10 @@ router.get('/users', getAllUsers);
 
 
 //Points Route
-router.post('/points', updateUserPoints);
+router.post('/points', authenticateToken, updateUserPoints);
 router.post('/points/claim', claimPoints);
-router.get('/points/:username', getUserPoints);
-router.get('/points', getAllUsersPoints);
+router.get('/points', getUserPoints);
+router.get('/points/:all', getAllUsersPoints);
 router.get('/community/:community', getUserPointsByCommunity);
 
 //Transaction Routes
@@ -50,7 +50,7 @@ router.get('/transactions/history', getTransactionHistory);
 router.get('/transactions/:community', getCommunityTransactions);
 
 //needs checking again
-router.get('/points-history/:username', getPointsHistory);
+router.get('/points-history/:username/:community', getPointsHistory);
 
 //community setup
 router.post('/clone-repo', cloneRepository);
