@@ -17,6 +17,11 @@ const communitySchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  communityUrl: {
+    type: String,
+    required: true,
+    unique: true,
+  },
 });
 
 module.exports = mongoose.model("Community", communitySchema);

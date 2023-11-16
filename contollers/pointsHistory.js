@@ -3,7 +3,7 @@ const User = require('../models/User');
 
 const getPointsHistory = async (req, res) => {
   try {
-    const { username } = req.params;
+    const { username, community } = req.params;
     
     const user = await User.findOne({ username });
 
@@ -13,7 +13,7 @@ const getPointsHistory = async (req, res) => {
       });
     }
 
-    const pointsHistory = await PointsHistory.find({ user: user._id }).sort({ timestamp: -1 });
+    const pointsHistory = await PointsHistory.find({ user: user._id, community }).sort({ timestamp: -1 });
 
     res.status(200).json({
       message: 'Points history fetched successfully',
