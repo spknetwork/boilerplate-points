@@ -13,14 +13,14 @@ const updateUserPoints = async (req, res) => {
     }
 
     const pointsLimitations = {
-      posts: 20,
-      comments: 30,
-      upvote: 5,
-      reblog: 2,
-      login: 2,
-      delegation: 1,
-      community: 4,
-      checking: 5,
+      posts: 100,
+      comments: 100,
+      upvote: 100,
+      reblog: 100,
+      login: 100,
+      delegation: 100,
+      community: 100,
+      checking: 100,
     };
 
     const pointsToAdd = {
