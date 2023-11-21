@@ -38,7 +38,7 @@ router.get('/users', getAllUsers);
 
 //Points Route
 router.post('/points', authenticateToken, updateUserPoints);
-router.post('/points/claim', claimPoints);
+router.post('/points/claim', authenticateToken, claimPoints);
 router.get('/points', getUserPoints);
 router.get('/points/:all', getAllUsersPoints);
 router.get('/community/:community', getUserPointsByCommunity);
