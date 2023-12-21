@@ -9,8 +9,15 @@ const port = process.env.PORT || 4000;
 
 app.use(express.json());
 
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3002",
+  "https://breakaway-page-setup.vercel.app",
+  "https://breakaway.community",
+];
+
 app.use(cors({
-    origin: "http://localhost:3000",
+    origin: allowedOrigins,
 }));
 
 app.use(express.urlencoded({extended: true}));
