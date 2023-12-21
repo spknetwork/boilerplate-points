@@ -1,7 +1,7 @@
 const Point = require('../models/Point');
 const User = require('../models/User');
 const { getAccount, createAccountWithKey, createAccountKeys } = require("../hive/hive");
-const sendEmail = require("../utils/mailgun")
+const { sendEmail } = require("../utils/mailgun")
 
 // This migt not be relevant anymore since we are not creating an already existing account, we alreay implemented keychain login
 const createUser = async (req, res) => {
