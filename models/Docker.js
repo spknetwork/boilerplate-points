@@ -16,6 +16,11 @@ const communityDockerSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  communityName: {
+    type: String,
+    required: true,
+    unique: true,
+  },
   domain: {
     type: String,
     required: true,

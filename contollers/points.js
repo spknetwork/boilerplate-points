@@ -1,6 +1,7 @@
 const Point = require('../models/Point');
 const User = require('../models/User');
 const PointsHistory = require('../models/PointsHistory');
+const { calculateTotalPoints } = require("../utils/aggregatePoints")
 
 const updateUserPoints = async (req, res) => {
   try {
@@ -227,10 +228,39 @@ const getUserPointsByCommunity = async (req, res) => {
   }
 };
 
+const aggregateCommunityPoints = async (req, res) => {
+  try {
+    const userPoints = await Point.find();
+
+    const aggregatedCommunities = userPoints.reduce((result, userPoint) => {
+      const existingCommunity = result.find(c => c.communityName === userPoint.communityName);
+
+      if (existingCommunity) {
+        existingCommunity.totalPoints += calculateTotalPoints(userPoint.points_by_type);
+      } else {
+        result.push({
+          communityName: userPoint.communityName,
+          totalPoints: calculateTotalPoints(userPoint.points_by_type)
+        });
+      }
+
+      return result;
+    }, []);
+
+    aggregatedCommunities.sort((a, b) => b.totalPoints - a.totalPoints);
+
+    return res.json({ aggregatedCommunities });
+  } catch (error) {
+    console.error('Error fetching communities:', error.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
     updateUserPoints,
     getUserPoints,
     getAllUsersPoints,
     claimPoints,
-    getUserPointsByCommunity
+    getUserPointsByCommunity,
+    aggregateCommunityPoints 
 };
