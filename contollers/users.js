@@ -165,6 +165,8 @@ const createHiveAccount = async (req, res) => {
         existingPointsRecord.unclaimedPoints += 10;
         await existingPointsRecord.save();
       }
+       //send onboard email to user
+       sendEmail(username, referral, email)
 
       return res.status(200).json({
         success: true,
@@ -185,6 +187,7 @@ const createHiveAccountKc = async (req, res) => {
   try {
     const { username, community, referral, email } = req.body;
     
+    console.log("email", email)
     if (!username || !community) {
       return res.status(400).json({
         message: 'Missing required keys: username or community',
