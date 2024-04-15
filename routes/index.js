@@ -14,6 +14,7 @@ const { registerCommunity } = require('../contollers/communities');
 const { loginUser, registerUser, checkSolBalance} = require('../contollers/offchainUsers');
 const  authenticateToken  = require("../middleware/auth");
 const { cloneRepository, createEnvVariables, checkDirectory, checkEnvFile, runDocker } = require("../contollers/communitySetup")
+const { dockerSetup } = require('../contollers/docker');
 
 const router = express.Router();
 
@@ -35,6 +36,8 @@ router.post('/offchain-users/login', loginUser); //not needed anymore
 router.post('/create-hive-account', createHiveAccount);
 router.get('/users', getAllUsers);
 
+//docker setup
+router.post('/docker-setup', dockerSetup);
 
 //Points Route
 router.post('/points', authenticateToken, updateUserPoints);

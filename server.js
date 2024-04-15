@@ -8,18 +8,9 @@ const app = express();
 const port = process.env.PORT || 4000;
 
 app.use(express.json());
-
-const allowedOrigins = [
-  "https://breakaway-page-setup.vercel.app",
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://localhost:3002",
-];
-
-app.use(cors({
-    origin: allowedOrigins,
-}));
-
+  
+  app.use(cors());
+  
 app.use(express.urlencoded({extended: true}));
 
 connectDb();

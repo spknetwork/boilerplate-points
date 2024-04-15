@@ -1,6 +1,7 @@
 const Point = require('../models/Point');
 const User = require('../models/User');
-const { getAccount, createAccountWithKey, createAccountKeys } = require("../hive/hive")
+const { getAccount, createAccountWithKey, createAccountKeys } = require("../hive/hive");
+const { sendEmail } = require("../utils/mailgun")
 
 // This migt not be relevant anymore since we are not creating an already existing account, we alreay implemented keychain login
 const createUser = async (req, res) => {
@@ -163,6 +164,8 @@ const createHiveAccount = async (req, res) => {
         existingPointsRecord.unclaimedPoints += 10;
         await existingPointsRecord.save();
       }
+       //send onboard email to user
+       sendEmail(username, referral, email)
 
       return res.status(200).json({
         success: true,
@@ -183,6 +186,7 @@ const createHiveAccountKc = async (req, res) => {
   try {
     const { username, community, referral, email } = req.body;
     
+    console.log("email", email)
     if (!username || !community) {
       return res.status(400).json({
         message: 'Missing required keys: username or community',
@@ -239,6 +243,8 @@ const createHiveAccountKc = async (req, res) => {
         existingPointsRecord.unclaimedPoints += 10;
         await existingPointsRecord.save();
       }
+      //send onboard email to user
+      sendEmail(username, referral, email)
 
       return res.status(200).json({
         success: true,
