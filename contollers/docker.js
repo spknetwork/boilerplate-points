@@ -27,4 +27,14 @@ const dockerSetup = async (req, res) => {
   }
 };
 
-module.exports = { dockerSetup };
+const getDockerSetups = async (req, res) => {
+  try {
+    const dockerSetups = await Docker.find({});
+    res.status(200).json(dockerSetups);
+  } catch (error) {
+    console.error('Error fetching Docker setups:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+module.exports = { dockerSetup, getDockerSetups };

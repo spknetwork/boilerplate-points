@@ -14,7 +14,7 @@ const { registerCommunity } = require('../contollers/communities');
 const { loginUser, registerUser, checkSolBalance} = require('../contollers/offchainUsers');
 const  authenticateToken  = require("../middleware/auth");
 const { cloneRepository, createEnvVariables, checkDirectory, checkEnvFile, runDocker } = require("../contollers/communitySetup")
-const { dockerSetup } = require('../contollers/docker');
+const { dockerSetup, getDockerSetups } = require('../contollers/docker');
 
 const router = express.Router();
 
@@ -38,6 +38,7 @@ router.get('/users', getAllUsers);
 
 //docker setup
 router.post('/docker-setup', dockerSetup);
+router.get('/docker-setup', getDockerSetups);
 
 //Points Route
 router.post('/points', authenticateToken, updateUserPoints);
