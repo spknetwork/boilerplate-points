@@ -37,7 +37,7 @@ const sendEmail = (newUser, creator, email) => {
           <li>Authorize Hive Keychain to interact with your Hive account.</li>
         </ol>
         
-        <p>Learn more about breakaway communities <a href="https://breakaway.communities.com" target="_blank">Here!</a>!</p>
+        <p>Learn more about breakaway communities <a href="https://breakaway.community" target="_blank">Here!</a>!</p>
         <p>Happy Hiving! 🚀</p>
       </div>
     `,
