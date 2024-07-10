@@ -149,7 +149,7 @@ const keychainAuth = async (req, res) => {
             },
             process.env.JWT_SECRET,
             {
-              expiresIn: '12h',
+              expiresIn: '12000h', //test
             }
           );
 
@@ -179,7 +179,7 @@ const keychainAuth = async (req, res) => {
         },
         process.env.JWT_SECRET,
         {
-          expiresIn: '12h',
+          expiresIn: '12000h', //test
         }
         );
         
