@@ -37,4 +37,15 @@ const getDockerSetups = async (req, res) => {
   }
 };
 
-module.exports = { dockerSetup, getDockerSetups };
+const getSingleDockerSetup = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const dockerSetup = await Docker.findOne({communityId: id});
+    res.status(200).json(dockerSetup);
+  } catch (error) {
+    console.error('Error fetching Docker setups:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+module.exports = { dockerSetup, getDockerSetups, getSingleDockerSetup };
