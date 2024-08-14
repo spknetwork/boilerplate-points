@@ -205,19 +205,13 @@ const claimPoints = async (req, res) => {
 
 const getUserPointsByCommunity = async (req, res) => {
   try {
-    const { community } = req.params;
+    const { id } = req.params;
 
-    const pointsRecords = await Point.find({ communityName: community });
-
-    const userPointsData = pointsRecords.map((pointsRecord) => ({
-      user: pointsRecord.user,
-      community: pointsRecord.communityName,
-      points: pointsRecord.points_by_type,
-    }));
+    const pointsRecords = await Point.find({ communityName: id });
 
     res.status(200).json({
       message: 'User points by community retrieved successfully',
-      data: userPointsData,
+      data: pointsRecords,
     });
   } catch (err) {
     console.error(err);
