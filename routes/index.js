@@ -37,7 +37,7 @@ router.post('/create-hive-account', createHiveAccount);
 router.get('/users', getAllUsers);
 
 //docker setup
-router.post('/docker-setup', dockerSetup);
+router.post('/platform-setup', dockerSetup);
 router.get('/docker-setup', getDockerSetups);
 router.get('/docker-setup/:id', getSingleDockerSetup);
 

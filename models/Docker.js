@@ -5,6 +5,14 @@ const communityDockerSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  platformCreator: {
+    type: String,
+    required: true,
+  },
+  aboutPlatform: {
+    type: String,
+    required: true,
+  },
   port: {
     type: String,
   },
@@ -14,7 +22,6 @@ const communityDockerSchema = new mongoose.Schema({
   communityId: {
     type: String,
     required: true,
-    unique: true,
   },
   domain: {
     type: String,

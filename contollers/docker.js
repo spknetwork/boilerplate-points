@@ -1,10 +1,12 @@
 const Docker = require("../models/Docker");
 
 const dockerSetup = async (req, res) => {
-    const { containerName, port, tags, communityId, domain } = req.body;
+  const { containerName, port, tags, communityId, domain, platformCreator, aboutPlatform } = req.body;
+
   try {
     console.log("Request Body:", req.body);
 
+    // Check if a community with the same domain already exists
     const existingCommunity = await Docker.findOne({ domain });
     if (existingCommunity) {
       return res.status(400).json({ error: 'Community with this domain already exists' });
@@ -12,6 +14,8 @@ const dockerSetup = async (req, res) => {
 
     const newDocker = new Docker({
       containerName,
+      platformCreator,
+      aboutPlatform,
       port,
       tags,
       communityId,
@@ -23,7 +27,11 @@ const dockerSetup = async (req, res) => {
     res.status(200).json({ message: 'Community registered successfully', communityDocker: newDocker });
   } catch (error) {
     console.error('Error registering community:', error.message);
-    res.status(500).json({ error: 'Internal server error' });
+    if (error.code === 11000) { // Duplicate key error code
+      res.status(400).json({ error: 'Community with this domain already exists' });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
 };
 
