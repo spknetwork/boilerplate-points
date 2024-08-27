@@ -4,7 +4,7 @@ const PointsHistory = require('../models/PointsHistory');
 
 const updateUserPoints = async (req, res) => {
   try {
-    const { username, community, pointType } = req.body;
+    const { username, community, pointType, communityId } = req.body;
 
     if (!username || !community || !pointType) {
       return res.status(400).json({
@@ -50,13 +50,17 @@ const updateUserPoints = async (req, res) => {
 
     let communityToUpdate = await Point.findOne({
       user: user._id,
+      username,
       communityName: community,
+      communityId,
     });
 
     if (!communityToUpdate) {
       const initialCommunityData = {
         user: user._id,
+        username,
         communityName: community,
+        communityId: communityId,
         points_by_type: {
           posts: { points: 0, awarded_timestamps: [] },
           comments: { points: 0, awarded_timestamps: [] },
@@ -68,7 +72,7 @@ const updateUserPoints = async (req, res) => {
           checking: { points: 0, awarded_timestamps: [] },
         },
         pointsBalance: 0,
-        symbol: '', // community token symbol
+        symbol: '',
         unclaimedPoints: 0,
       };
 
@@ -87,7 +91,9 @@ const updateUserPoints = async (req, res) => {
 
     await PointsHistory.create({
       user: user._id,
+      username,
       community,
+      communityId,
       operationType: pointType,
       pointsEarned: pointsAwarded,
     });

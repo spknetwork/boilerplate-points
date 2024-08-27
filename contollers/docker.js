@@ -48,7 +48,7 @@ const getDockerSetups = async (req, res) => {
 const getSingleDockerSetup = async (req, res) => {
   const { id } = req.params;
   try {
-    const dockerSetup = await Docker.findOne({communityId: id});
+    const dockerSetup = await Docker.find({communityId: id});
     res.status(200).json(dockerSetup);
   } catch (error) {
     console.error('Error fetching Docker setups:', error.message);

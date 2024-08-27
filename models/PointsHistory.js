@@ -6,6 +6,7 @@ const pointsHistorySchema = new mongoose.Schema({
     ref: "User",
   },
   community: String,
+  communityId: String,
   operationType: String,
   pointsEarned: Number,
   timestamp: {
