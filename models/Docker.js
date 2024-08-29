@@ -28,6 +28,19 @@ const communityDockerSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  dockerStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'canceled'],
+    default: 'pending',
+  },
+  admins: {
+    type: [String],
+    default: [],
+  },
+  communityTitle: {
+    type: String,
+    required: true,
+  },
 });
 
 module.exports = mongoose.model("Docker", communityDockerSchema);
