@@ -57,7 +57,7 @@ const confirmDockerRequest = async (req, res) => {
       return res.status(404).json({ error: 'Docker setup not found' });
     }
 
-    if (docker.status !== 'pending') {
+    if (docker.dockerStatus !== 'pending') {
       return res.status(400).json({ error: 'Docker setup has already been processed' });
     }
 
