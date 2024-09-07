@@ -61,7 +61,7 @@ const confirmDockerRequest = async (req, res) => {
       return res.status(400).json({ error: 'Docker setup has already been processed' });
     }
 
-    docker.status = 'approved';
+    docker.dockerStatus = 'approved';
     await docker.save();
 
     res.status(200).json({ message: 'Docker setup approved successfully', communityDocker: docker });
