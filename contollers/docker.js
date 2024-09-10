@@ -36,13 +36,13 @@ const dockerSetupRequest = async (req, res) => {
 
     await newDocker.save();
 
-    res.status(200).json({ message: 'Community registered successfully and is pending approval', communityDocker: newDocker });
+    res.status(200).json({success: true, message: 'Community registered successfully and is pending approval', communityDocker: newDocker });
   } catch (error) {
     console.error('Error registering community:', error.message);
     if (error.code === 11000) {
-      res.status(400).json({ error: 'Community with this domain already exists' });
+      res.status(400).json({success: false, error: 'Community with this domain already exists' });
     } else {
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({success: false, error: 'Internal server error' });
     }
   }
 };
