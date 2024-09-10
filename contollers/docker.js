@@ -64,10 +64,10 @@ const confirmDockerRequest = async (req, res) => {
     docker.dockerStatus = 'approved';
     await docker.save();
 
-    res.status(200).json({ message: 'Docker setup approved successfully', communityDocker: docker });
+    res.status(200).json({success: true, message: 'Docker setup approved successfully', communityDocker: docker });
   } catch (error) {
     console.error('Error approving Docker setup:', error.message);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({success: false, error: 'Internal server error' });
   }
 };
 
@@ -85,13 +85,30 @@ const cancelDockerRequest = async (req, res) => {
       return res.status(400).json({ error: 'Docker setup cannot be canceled as it is already processed' });
     }
 
-    docker.dockerStatus = 'canceled'; // Update status to canceled
+    docker.dockerStatus = 'canceled';
     await docker.save();
 
-    res.status(200).json({ message: 'Docker setup canceled successfully', communityDocker: docker });
+    res.status(200).json({success: true, message: 'Docker setup canceled successfully', communityDocker: docker });
   } catch (error) {
     console.error('Error canceling Docker setup:', error.message);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({success: false, error: 'Internal server error' });
+  }
+};
+
+const deleteDockerRequest = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const docker = await Docker.findByIdAndDelete(id);
+
+    if (!docker) {
+      return res.status(404).json({ error: 'Docker setup not found' });
+    }
+
+    res.status(200).json({success: true, message: 'Docker setup deleted successfully', communityDocker: docker });
+  } catch (error) {
+    console.error('Error deleting Docker setup:', error.message);
+    res.status(500).json({success: false, error: 'Internal server error' });
   }
 };
 
@@ -116,4 +133,4 @@ const getSingleDockerSetup = async (req, res) => {
   }
 };
 
-module.exports = { dockerSetupRequest, getDockerSetups, getSingleDockerSetup, confirmDockerRequest, cancelDockerRequest };
+module.exports = { dockerSetupRequest, getDockerSetups, getSingleDockerSetup, confirmDockerRequest, cancelDockerRequest, deleteDockerRequest };
