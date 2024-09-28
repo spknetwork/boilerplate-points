@@ -15,6 +15,9 @@ const { loginUser, registerUser, checkSolBalance} = require('../contollers/offch
 const  authenticateToken  = require("../middleware/auth");
 const { cloneRepository, createEnvVariables, checkDirectory, checkEnvFile, runDocker } = require("../contollers/communitySetup")
 const { dockerSetupRequest, getDockerSetups, getSingleDockerSetup, confirmDockerRequest, cancelDockerRequest, deleteDockerRequest } = require('../contollers/docker');
+const { createAccount } = require('../contollers/bitcoin');
+const loginAdmin = require('../contollers/admin');
+const verifyAdmin = require('../middleware/admin');
 
 const router = express.Router();
 
@@ -40,9 +43,10 @@ router.get('/users', getAllUsers);
 router.post('/platform-setup', dockerSetupRequest);
 router.get('/docker-setup', getDockerSetups);
 router.get('/docker-setup/:id', getSingleDockerSetup);
-router.put('/platform-setup/confirm/:id', confirmDockerRequest);
-router.put('/platform-setup/cancel/:id', cancelDockerRequest);
-router.delete('/platform-setup/delete/:id', deleteDockerRequest);
+///////admin actions docker set up
+router.put('/platform-setup/confirm/:id', verifyAdmin, confirmDockerRequest);
+router.put('/platform-setup/cancel/:id', verifyAdmin, cancelDockerRequest);
+router.delete('/platform-setup/delete/:id', verifyAdmin, deleteDockerRequest);
 
 //Points Route
 router.post('/points', authenticateToken, updateUserPoints);
@@ -67,5 +71,13 @@ router.get('/check-directory', checkDirectory);
 router.get('/check-env-file', checkEnvFile);
 router.get('/run-docker', runDocker);
 router.post('/register-community', registerCommunity);
+
+
+/////////bitcoin
+router.post('/create-account', createAccount)
+
+
+/////admin
+router.post('/admin/login',loginAdmin)
 
 module.exports = router;

@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const PointSchema = require("./Point");
 
-const UserSchema = new mongoose.Schema({
+const BitcoinMachinesSchema = new mongoose.Schema({
   username: {
     type: String,
     unique: true,
@@ -26,10 +26,10 @@ const UserSchema = new mongoose.Schema({
   }
 },
 {
-  timestamps: {
+  timestamps: { 
     createdAt: "created_at",
     updatedAt: "updated_at",
   },
 }); 
 
-module.exports = mongoose.model("User", UserSchema);
+module.exports = mongoose.model("BtcMachines", BitcoinMachinesSchema);
