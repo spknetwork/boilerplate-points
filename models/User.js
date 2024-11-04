@@ -9,6 +9,7 @@ const UserSchema = new mongoose.Schema({
   email: {
     type: String,
     unique: true,
+    sparse: true,
   },
   referral: {
     type: String,
@@ -16,6 +17,7 @@ const UserSchema = new mongoose.Schema({
   bitcoinAddress: {
     type: String,
     unique: true,
+    sparse: true,
   },
   signature: {
     type: String,

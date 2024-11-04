@@ -267,9 +267,34 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+const getUserByUsername = async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      bacUser: user,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: 'Internal server error',
+    });
+  }
+};
+
 module.exports = {
     createUser,
     getAllUsers,
     createHiveAccount,
-    createHiveAccountKc
+    createHiveAccountKc,
+    getUserByUsername
 }

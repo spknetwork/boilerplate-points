@@ -5,6 +5,8 @@ const fs = require('fs').promises;
 require('dotenv').config();
 const client = require("./../hive/client")
 const BitcoinMachines = require('../models/BitcoinMachines');
+const User = require("../models/User.js");
+const { getBitcoinMainnetBalance, getBitcoinAddressTransactions } = require("../utils/bitcoin.js")
 
 // Function to check if a BTC address holds a specific NFT or asset
 async function checkBTCMachineOwnership(address) {
@@ -35,8 +37,6 @@ async function checkBTCMachineOwnership(address) {
     }
 }
 
-const BTC_ADDRESSES_FILE = 'btc_addresses.json';
-
 // Function to verify a Bitcoin message signature
 function verifySignature(address, message, signature) {
     try {
@@ -44,25 +44,6 @@ function verifySignature(address, message, signature) {
     } catch (error) {
         throw new Error('Signature verification failed');
     }
-}
-
-// Function to read BTC addresses from file
-async function readBTCAddresses() {
-    try {
-        const data = await fs.readFile(BTC_ADDRESSES_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            // File doesn't exist, return an empty array
-            return [];
-        }
-        throw error;
-    }
-}
-
-// Function to write BTC addresses to file
-async function writeBTCAddresses(addresses) {
-    await fs.writeFile(BTC_ADDRESSES_FILE, JSON.stringify(addresses, null, 2));
 }
 
 // Endpoint to create a new account using claimed accounts with signature verification
@@ -81,17 +62,20 @@ const createAccount = async (req, res) => {
             return res.status(400).json({ error: 'Invalid signature' });
         }
 
-        // Check if the BTC address has already been used
+        // // Check if the BTC address has already been used
         // const existingRecord = await BitcoinMachines.findOne({ bitcoinAddress: address });
         // if (existingRecord) {
         //     return res.status(400).json({ error: 'This BTC address has already been used to create an account' });
         // }
 
-        // Check if the BTC address has already been used
-        // const usedAddresses = await readBTCAddresses();
-        // if (usedAddresses.includes(address)) {
-        //     return res.status(400).json({ error: 'This BTC address has already been used to create an account' });
-        // }
+        // Check if the username or BTC address has already been used
+        const existingUser = await User.findOne({ 
+            $or: [{ username }, { bitcoinAddress: address }]
+        });
+
+        if (existingUser) {
+            return res.status(400).json({ error: 'This username or BTC address has already been used to create an account' });
+        }
 
         const ownsBTCMachine = await checkBTCMachineOwnership(address);
         // if (!ownsBTCMachine) {
@@ -144,22 +128,14 @@ const createAccount = async (req, res) => {
 
         console.log(createAccount)
 
-        // // Save the BTC address to the JSON file
-        // usedAddresses.push({
-        //     bitcoinAddress: address + Date.now(),
-        //     hiveAccount: username,
-        //     createdAt: Date.now()
-        // });
-        // await writeBTCAddresses(usedAddresses);
-
-        const newMachine = new BitcoinMachines({
+        const newUser = new User({
             username,
             bitcoinAddress: address,
             signature,
             ownsBTCMachine,
         });
 
-        await newMachine.save();
+        await newUser.save();
 
         res.json({
             success: true,
@@ -177,4 +153,32 @@ const createAccount = async (req, res) => {
     }
 };
 
-module.exports = { checkBTCMachineOwnership, createAccount };
+const checkBtcBal = async (req, res) => {
+    try {
+      const { address } = req.params;
+      console.log(address);
+  
+      const result = await getBitcoinMainnetBalance(address);
+      console.log(result);
+  
+      res.json({ success: true, balance: result });
+    } catch (error) {
+      console.error('Error fetching Bitcoin balance:', error);
+      res.status(500).json({ success: false, message: 'Error fetching Bitcoin balance' });
+    }
+  };
+
+const getAddressTransactions = async (req, res) => {
+    try {
+        const { address } = req.params;
+        console.log(address)
+
+        const result = await  getBitcoinAddressTransactions(address);
+        console.log(result)
+        res.json({ success: true, transactions: result });
+    } catch (error) {
+        
+    }
+}
+
+module.exports = { checkBTCMachineOwnership, createAccount, checkBtcBal, getAddressTransactions };
