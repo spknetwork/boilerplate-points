@@ -95,7 +95,7 @@ const createAccount = async (req, res) => {
         const publicPostingKey = postingKey.createPublic().toString();
         const publicMemoKey = memoKey.createPublic().toString();
 
-        const createAccount = await client.c.sendOperations(
+        const createAccount = await client.broadcast.sendOperations(
             [
                 [
                     'create_claimed_account',
