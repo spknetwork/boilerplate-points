@@ -29,4 +29,31 @@ async function checkBTCMachineOwnership(address) {
     }
 }
 
-module.exports = { checkBTCMachineOwnership };
+const getBitcoinMainnetBalance = async (btcAddress) => {
+    try {
+      const response = await axios.get(`https://blockstream.info/api/address/${btcAddress}`);
+      
+      const { funded_txo_sum, spent_txo_sum } = response.data.chain_stats;
+  
+      const btcBalance = funded_txo_sum - spent_txo_sum;
+  
+      const btcBalanceInBTC = btcBalance / 100000000;
+    
+      return btcBalanceInBTC;
+    } catch (error) {
+      console.error("Error fetching Bitcoin Mainnet balance:", error);
+      throw error;
+    }
+  };
+
+  const getBitcoinAddressTransactions = async (address) =>{
+    try {
+      const response = await axios.get(`https://blockstream.info/api/address/${address}/txs`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      return [];
+    }
+  }
+
+module.exports = { checkBTCMachineOwnership, getBitcoinMainnetBalance, getBitcoinAddressTransactions };

@@ -1,5 +1,5 @@
 const express = require('express');
-const { createUser, createHiveAccount, getAllUsers, createHiveAccountKc } = require('../contollers/users');
+const { createUser, createHiveAccount, getAllUsers, createHiveAccountKc, getUserByUsername } = require('../contollers/users');
 const { transferPoints, getTransactionHistory, getCommunityTransactions } = require('../contollers/transactions');
 const { 
     updateUserPoints, 
@@ -15,7 +15,7 @@ const { loginUser, registerUser, checkSolBalance} = require('../contollers/offch
 const  authenticateToken  = require("../middleware/auth");
 const { cloneRepository, createEnvVariables, checkDirectory, checkEnvFile, runDocker } = require("../contollers/communitySetup")
 const { dockerSetupRequest, getDockerSetups, getSingleDockerSetup, confirmDockerRequest, cancelDockerRequest, deleteDockerRequest } = require('../contollers/docker');
-const { createAccount } = require('../contollers/bitcoin');
+const { createAccount, checkBtcBal, getAddressTransactions } = require('../contollers/bitcoin');
 const loginAdmin = require('../contollers/admin');
 const verifyAdmin = require('../middleware/admin');
 
@@ -38,6 +38,7 @@ router.post('/offchain-users/register', registerUser);
 router.post('/offchain-users/login', loginUser); //not needed anymore
 router.post('/create-hive-account', createHiveAccount);
 router.get('/users', getAllUsers);
+router.get('/user/:username', getUserByUsername);
 
 //docker setup
 router.post('/platform-setup', dockerSetupRequest);
@@ -75,6 +76,8 @@ router.post('/register-community', registerCommunity);
 
 /////////bitcoin
 router.post('/create-account', createAccount)
+router.get('/btc-balance/:address', checkBtcBal)
+router.get('/address-trx/:address', getAddressTransactions)
 
 
 /////admin

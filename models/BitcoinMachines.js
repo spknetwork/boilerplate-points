@@ -6,10 +6,6 @@ const BitcoinMachinesSchema = new mongoose.Schema({
     type: String,
     unique: true,
   },
-  email: {
-    type: String,
-    unique: true,
-  },
   referral: {
     type: String,
   },
