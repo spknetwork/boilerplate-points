@@ -120,7 +120,7 @@ const createAccount = async (req, res) => {
         const balance = await getBitcoinMainnetBalance(address);
 
         if(balance < 0.00005) {
-            return res.status(400).json({ error: 'You must have at lease 0.00005btc to get a free account' });
+            return res.status(400).json({ error: 'You must have at least 0.00005btc to get a free account' });
         }
 
         // Verify the Bitcoin message signature
@@ -227,7 +227,7 @@ const createOneBtcAccount = async (req, res) => {
         const balance = await getBitcoinMainnetBalance(address);
 
         if(balance < 0.00005) {
-            return res.status(400).json({ error: 'You must have at lease 0.00005btc to get a free account' });
+            return res.status(400).json({ error: 'You must have at least 0.00005btc to get a free account' });
         }
 
         // Verify the Bitcoin message signature
