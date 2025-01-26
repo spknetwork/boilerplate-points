@@ -15,7 +15,7 @@ const { loginUser, registerUser, checkSolBalance} = require('../contollers/offch
 const  authenticateToken  = require("../middleware/auth");
 const { cloneRepository, createEnvVariables, checkDirectory, checkEnvFile, runDocker } = require("../contollers/communitySetup")
 const { dockerSetupRequest, getDockerSetups, getSingleDockerSetup, confirmDockerRequest, cancelDockerRequest, deleteDockerRequest } = require('../contollers/docker');
-const { createAccount, checkBtcBal, getAddressTransactions, createOneBtcAccount, createFreeAccount, generateHiveAccountKeys } = require('../contollers/bitcoin');
+const { createBtcMachineAccount, checkBtcBal, getAddressTransactions, createOneBtcAccount, createFreeAccount, generateHiveAccountKeys, checkForBcMachine, updateAccountWithBtcInfo } = require('../contollers/bitcoin');
 const loginAdmin = require('../contollers/admin');
 const verifyAdmin = require('../middleware/admin');
 
@@ -75,13 +75,14 @@ router.post('/register-community', registerCommunity);
 
 
 /////////bitcoin
-router.post('/create-account', createAccount)
+router.post('/create-account', createBtcMachineAccount)
 router.post('/create-one-btc-account', createOneBtcAccount)
 router.post('/create-free-account', createFreeAccount)
 router.post('/get-account-keys', generateHiveAccountKeys)
 router.get('/btc-balance/:address', checkBtcBal)
 router.get('/address-trx/:address', getAddressTransactions)
-
+router.get('/btc-machine/:address', checkForBcMachine)
+router.post('/update-account-btc', updateAccountWithBtcInfo);
 
 /////admin
 router.post('/admin/login',loginAdmin)
