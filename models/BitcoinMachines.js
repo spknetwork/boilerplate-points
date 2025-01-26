@@ -13,6 +13,10 @@ const BitcoinMachinesSchema = new mongoose.Schema({
     type: String,
     unique: true,
   },
+  ordinalAddress: {
+    type: String,
+    unique: true,
+  },
   signature: {
     type: String,
   },

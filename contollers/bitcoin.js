@@ -40,7 +40,7 @@ const generatePassword = async (length) => {
 // Function to check if a BTC address holds a specific NFT or asset
 async function checkBTCMachineOwnership(address) {
     try {
-        // Construct the API URL with the provided Bitcoin address
+    
         const apiUrl = `https://api-mainnet.magiceden.dev/v2/ord/btc/runes/wallet/activities/${address}`;
 
         // Make the request to the API with the Authorization header
@@ -109,10 +109,10 @@ const generateHiveAccountKeys = async (req, res) => {
 };
 
 // Endpoint to create a new account using claimed accounts with signature verification
-const createAccount = async (req, res) => {
-    const { username, address, message, signature, accountKeys } = req.body;
+const createBtcMachineAccount = async (req, res) => {
+    const { username, address, message, signature, accountKeys, ordinalAddress } = req.body;
 
-    if (!username || !address || !message || !signature || !accountKeys) {
+    if (!username || !address || !message || !signature || !accountKeys || !ordinalAddress) {
         return res.status(400).json({ error: 'Username, address, message, and signature are required' });
     }
 
@@ -146,9 +146,9 @@ const createAccount = async (req, res) => {
         }
 
         const ownsBTCMachine = await checkBTCMachineOwnership(address);
-        if (!ownsBTCMachine) {
-             return res.status(400).json({ error: 'No Bitcoin Machine found in the provided address' });
-        }
+        // if (!ownsBTCMachine) {
+        //      return res.status(400).json({ error: 'No Bitcoin Machine found in the provided address' });
+        // }
 
         const accountCreator = process.env.HIVE_ACCOUNT_CREATOR;
         const activeKey = dhive.PrivateKey.fromString(process.env.HIVE_ACCOUNT_CREATOR_ACTIVE_KEY);
@@ -192,11 +192,22 @@ const createAccount = async (req, res) => {
         const newUser = new User({
             username,
             bitcoinAddress: address,
+            ordinalAddress,
             signature,
             ownsBTCMachine,
         });
 
         await newUser.save();
+
+        const newBtcUser = new BitcoinMachines({
+            username,
+            bitcoinAddress: address,
+            ordinalAddress,
+            signature,
+            ownsBTCMachine,
+        });
+
+        newBtcUser.save();
 
         res.json({
             success: true,
@@ -216,10 +227,10 @@ const createAccount = async (req, res) => {
 };
 
 const createOneBtcAccount = async (req, res) => {
-    const { username, address, message, signature, accountKeys } = req.body;
+    const { username, address, message, signature, accountKeys, ordinalAddress } = req.body;
     console.log(req.body)
 
-    if (!username || !address || !message || !signature || !accountKeys) {
+    if (!username || !address || !message || !signature || !accountKeys || !ordinalAddress) {
         return res.status(400).json({ error: 'Username, address, message, and signature are required' });
     }
     
@@ -252,13 +263,13 @@ const createOneBtcAccount = async (req, res) => {
             return res.status(400).json({ error: 'This username or BTC address has already been used to create an account' });
         }
 
+        const ownsBTCMachine = await checkBTCMachineOwnership(address);
+        // if (!ownsBTCMachine) {
+        //      return res.status(400).json({ error: 'No Bitcoin Machine found in the provided address' });
+        // }
+
         const accountCreator = process.env.HIVE_ACCOUNT_CREATOR;
         const activeKey = dhive.PrivateKey.fromString(process.env.HIVE_ACCOUNT_CREATOR_ACTIVE_KEY);
-
-        // const ownerKey = dhive.PrivateKey.fromLogin(username, 'owner', 'posting');
-        // const activeKeyNew = dhive.PrivateKey.fromLogin(username, 'active', 'posting');
-        // const postingKey = dhive.PrivateKey.fromLogin(username, 'posting', 'posting');
-        // const memoKey = dhive.PrivateKey.fromLogin(username, 'memo', 'posting');
 
         const publicOwnerKey = accountKeys.ownerPubkey
         const publicActiveKey = accountKeys.activePubkey
@@ -299,7 +310,9 @@ const createOneBtcAccount = async (req, res) => {
         const newUser = new User({
             username,
             bitcoinAddress: address,
+            ordinalAddress,
             signature,
+            ownsBTCMachine,
         });
 
         await newUser.save();
@@ -307,7 +320,9 @@ const createOneBtcAccount = async (req, res) => {
         const newBtcUser = new BitcoinMachines({
             username,
             bitcoinAddress: address,
+            ordinalAddress,
             signature,
+            ownsBTCMachine,
         });
         
         newBtcUser.save();
@@ -316,12 +331,6 @@ const createOneBtcAccount = async (req, res) => {
             success: true,
             result: createAccount,
             message: "Hive account created succesfully"
-            // keys: {
-            //     owner: ownerKey.toString(),
-            //     active: activeKeyNew.toString(),
-            //     posting: postingKey.toString(),
-            //     memo: memoKey.toString(),
-            // }
         });
     } catch (error) {
         console.log("error.....", error.message)
@@ -329,7 +338,79 @@ const createOneBtcAccount = async (req, res) => {
     }
 };
 
-/////This should be move to the right folder or we can rename the folder to hiveAccounts
+const updateAccountWithBtcInfo = async (req, res) => {
+    const { username, address, message, signature, ordinalAddress } = req.body;
+
+    try {
+        // Verify the Bitcoin message signature
+        const isValid = verifySignature(address, message, signature);
+
+        if (!isValid) {
+            return res.status(400).json({ error: 'Invalid signature' });
+        }
+
+        // Check if the BTC address or username already exists in the database
+        const existingUser = await User.findOne({ 
+            $or: [{ username }, { bitcoinAddress: address }]
+        });
+
+        // Determine BTC machine ownership
+        const ownsBTCMachine = await checkBTCMachineOwnership(address);
+
+        if (existingUser) {
+            // Update the existing user
+            existingUser.bitcoinAddress = address;
+            existingUser.ordinalAddress = ordinalAddress;
+            existingUser.signature = signature;
+            existingUser.ownsBTCMachine = ownsBTCMachine;
+            await existingUser.save();
+        } else {
+            // Create a new user
+            const newUser = new User({
+                username,
+                bitcoinAddress: address,
+                ordinalAddress,
+                signature,
+                ownsBTCMachine,
+            });
+            await newUser.save();
+        }
+
+        // Check if the BTC address or username exists in the BitcoinMachines collection
+        const existingBtcMachine = await BitcoinMachines.findOne({ 
+            $or: [{ username }, { bitcoinAddress: address }]
+        });
+
+        if (existingBtcMachine) {
+            // Update the existing BTC machine entry
+            existingBtcMachine.bitcoinAddress = address;
+            existingBtcMachine.ordinalAddress = ordinalAddress;
+            existingBtcMachine.signature = signature;
+            existingBtcMachine.ownsBTCMachine = ownsBTCMachine;
+            await existingBtcMachine.save();
+        } else {
+            // Create a new BTC machine entry
+            const newBtcMachine = new BitcoinMachines({
+                username,
+                bitcoinAddress: address,
+                ordinalAddress,
+                signature,
+                ownsBTCMachine,
+            });
+            await newBtcMachine.save();
+        }
+
+        res.json({
+            success: true,
+            message: "Account information updated successfully",
+        });
+    } catch (error) {
+        console.error("Error updating account:", error.message);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/////This should be moved to the right folder or we can rename the folder to hiveAccounts
 const createFreeAccount = async (req, res) => {
     const { username, accountKeys } = req.body;
 
@@ -443,4 +524,58 @@ const getAddressTransactions = async (req, res) => {
     }
 }
 
-module.exports = { checkBTCMachineOwnership, createAccount, checkBtcBal, getAddressTransactions, createOneBtcAccount, createFreeAccount, generateHiveAccountKeys };
+const checkForBcMachine = async (req, res) => {
+    try {
+        const { address } = req.params;
+        console.log(address)
+
+        const result = await  checkBTCMachineOwnership(address);
+        console.log("result",result)
+        if(!result) {
+            return res.status(400).json({
+                success: false,
+                message: 'Bitcoin address has no ordinal/machine',
+              });
+        }
+
+        return res.status(400).json({
+            success: true,
+            transactions: result
+          });
+    } catch (error) {
+        
+    }
+}
+
+async function fetchOrdinals(address) {
+    try {
+        const apiUrl = `https://ordinals.com/api/address/${address}`; // Replace with the correct API endpoint.
+        
+        // Fetch data from the API
+        const response = await axios.get(apiUrl);
+        
+        // Assuming the API returns a list of ordinals
+        const ordinals = response.data;
+
+        // Check if any ordinals exist
+        if (ordinals && ordinals.length > 0) {
+            console.log(`Ordinals for address ${address}:`);
+            ordinals.forEach((ordinal, index) => {
+                console.log(`Ordinal #${index + 1}:`);
+                console.log(`  ID: ${ordinal.id}`);
+                console.log(`  Inscription: ${ordinal.inscription}`);
+                console.log(`  Content: ${ordinal.content}`);
+                console.log(`  Transaction: ${ordinal.txid}`);
+                console.log('---');
+            });
+        } else {
+            console.log(`No ordinals found for address ${address}.`);
+        }
+    } catch (error) {
+        console.error(`Error fetching ordinals for address ${address}:`, error.message);
+    }
+} 
+
+module.exports = { checkBTCMachineOwnership, createBtcMachineAccount, checkBtcBal, getAddressTransactions, createOneBtcAccount, createFreeAccount, generateHiveAccountKeys, checkForBcMachine, updateAccountWithBtcInfo };
+
+// checkBTCMachineOwnership("3Ayy1eAVMmgBh4JDAGJv1kcdJq49suDC58")

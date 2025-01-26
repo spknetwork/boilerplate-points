@@ -19,6 +19,11 @@ const UserSchema = new mongoose.Schema({
     unique: true,
     sparse: true,
   },
+  ordinalAddress: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
   signature: {
     type: String,
   },
