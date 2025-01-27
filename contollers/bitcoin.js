@@ -145,10 +145,12 @@ const createBtcMachineAccount = async (req, res) => {
             return res.status(400).json({ error: 'This username or BTC address has already been used to create an account' });
         }
 
-        const ownsBTCMachine = await checkBTCMachineOwnership(address);
-        // if (!ownsBTCMachine) {
-        //      return res.status(400).json({ error: 'No Bitcoin Machine found in the provided address' });
-        // }
+        const ordinals = await fetchOrdinals(ordinalAddress);
+
+        const ownsBTCMachine = ordinals.length > 0;
+        if (!ownsBTCMachine) {
+             return res.status(400).json({ error: 'No Bitcoin Machine/ordinals found in the provided address' });
+        }
 
         const accountCreator = process.env.HIVE_ACCOUNT_CREATOR;
         const activeKey = dhive.PrivateKey.fromString(process.env.HIVE_ACCOUNT_CREATOR_ACTIVE_KEY);
@@ -263,7 +265,9 @@ const createOneBtcAccount = async (req, res) => {
             return res.status(400).json({ error: 'This username or BTC address has already been used to create an account' });
         }
 
-        const ownsBTCMachine = await checkBTCMachineOwnership(address);
+        const ordinals = await fetchOrdinals(ordinalAddress);
+
+        const ownsBTCMachine = ordinals.length > 0;
         // if (!ownsBTCMachine) {
         //      return res.status(400).json({ error: 'No Bitcoin Machine found in the provided address' });
         // }
@@ -355,7 +359,9 @@ const updateAccountWithBtcInfo = async (req, res) => {
         });
 
         // Determine BTC machine ownership
-        const ownsBTCMachine = await checkBTCMachineOwnership(address);
+        const ordinals = await fetchOrdinals(ordinalAddress);
+
+        const ownsBTCMachine = ordinals.length > 0;
 
         if (existingUser) {
             // Update the existing user
@@ -547,35 +553,46 @@ const checkForBcMachine = async (req, res) => {
     }
 }
 
-async function fetchOrdinals(address) {
-    try {
-        const apiUrl = `https://ordinals.com/api/address/${address}`; // Replace with the correct API endpoint.
+// async function fetchOrdinals(address) {
+//     try {
+//         const apiUrl = `https://ordinals.com/api/address/${address}`; // Replace with the correct API endpoint.
         
-        // Fetch data from the API
-        const response = await axios.get(apiUrl);
+//         // Fetch data from the API
+//         const response = await axios.get(apiUrl);
         
-        // Assuming the API returns a list of ordinals
-        const ordinals = response.data;
+//         // Assuming the API returns a list of ordinals
+//         const ordinals = response.data;
 
-        // Check if any ordinals exist
-        if (ordinals && ordinals.length > 0) {
-            console.log(`Ordinals for address ${address}:`);
-            ordinals.forEach((ordinal, index) => {
-                console.log(`Ordinal #${index + 1}:`);
-                console.log(`  ID: ${ordinal.id}`);
-                console.log(`  Inscription: ${ordinal.inscription}`);
-                console.log(`  Content: ${ordinal.content}`);
-                console.log(`  Transaction: ${ordinal.txid}`);
-                console.log('---');
-            });
-        } else {
-            console.log(`No ordinals found for address ${address}.`);
-        }
+//         // Check if any ordinals exist
+//         if (ordinals && ordinals.length > 0) {
+//             console.log(`Ordinals for address ${address}:`);
+//             ordinals.forEach((ordinal, index) => {
+//                 console.log(`Ordinal #${index + 1}:`);
+//                 console.log(`  ID: ${ordinal.id}`);
+//                 console.log(`  Inscription: ${ordinal.inscription}`);
+//                 console.log(`  Content: ${ordinal.content}`);
+//                 console.log(`  Transaction: ${ordinal.txid}`);
+//                 console.log('---');
+//             });
+//         } else {
+//             console.log(`No ordinals found for address ${address}.`);
+//         }
+//     } catch (error) {
+//         console.error(`Error fetching ordinals for address ${address}:`, error.message);
+//     }
+// }
+const fetchOrdinals = async (address) => {
+    const API_URL = `https://api.hiro.so/ordinals/v1/inscriptions?address=${address}`;
+  
+    try {
+      const response = await axios.get(API_URL);
+      console.log(response.data.results.length)
+    
+      return response.data.results
     } catch (error) {
-        console.error(`Error fetching ordinals for address ${address}:`, error.message);
+      console.error("Failed to fetch ordinals:", error.message);
+      return [];
     }
-} 
+  };
 
 module.exports = { checkBTCMachineOwnership, createBtcMachineAccount, checkBtcBal, getAddressTransactions, createOneBtcAccount, createFreeAccount, generateHiveAccountKeys, checkForBcMachine, updateAccountWithBtcInfo };
-
-// checkBTCMachineOwnership("3Ayy1eAVMmgBh4JDAGJv1kcdJq49suDC58")
