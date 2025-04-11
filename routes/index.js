@@ -1,5 +1,5 @@
 const express = require('express');
-const { createUser, createHiveAccount, getAllUsers, createHiveAccountKc, getUserByUsername } = require('../contollers/users');
+const { createUser, createHiveAccount, getAllUsers, getAllBtcUsers, createHiveAccountKc, getUserByUsername } = require('../contollers/users');
 const { transferPoints, getTransactionHistory, getCommunityTransactions } = require('../contollers/transactions');
 const { 
     updateUserPoints, 
@@ -38,6 +38,7 @@ router.post('/offchain-users/register', registerUser);
 router.post('/offchain-users/login', loginUser); //not needed anymore
 router.post('/create-hive-account', createHiveAccount);
 router.get('/users', getAllUsers);
+router.get('/btc-users', getAllBtcUsers);
 router.get('/user/:username', getUserByUsername);
 
 //docker setup
