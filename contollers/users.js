@@ -1,5 +1,6 @@
 const Point = require('../models/Point');
 const User = require('../models/User');
+const BitcoinMachines = require("../models/BitcoinMachines")
 const { getAccount, createAccountWithKey, createAccountKeys } = require("../hive/hive");
 const { sendEmail } = require("../utils/mailgun")
 
@@ -267,6 +268,17 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+const getAllBtcUsers = async (req, res) => {
+  try {
+    const btcUsers = await BitcoinMachines.find();
+    const usernames = btcUsers.map(user => user.username);
+
+    return res.json({ usernames });
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 const getUserByUsername = async (req, res) => {
   try {
     const { username } = req.params;
@@ -275,6 +287,7 @@ const getUserByUsername = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({
+        success: false,
         message: 'User not found',
       });
     }
@@ -296,5 +309,6 @@ module.exports = {
     getAllUsers,
     createHiveAccount,
     createHiveAccountKc,
-    getUserByUsername
+    getUserByUsername,
+    getAllBtcUsers
 }
