@@ -121,10 +121,8 @@ const updateUserPoints = async (req, res) => {
 const getUserPoints = async (req, res) => {
   try {
     const { username, community } = req.query;
-    console.log(username, community)
 
     const user = await User.findOne({ username });
-    console.log(user)
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -173,15 +171,17 @@ const claimPoints = async (req, res) => {
       });
     }
 
-    const pointsRecord = await Point.findOne({ user: user._id, communityName: community });
+    const pointsRecords = await Point.find({ user: user._id, communityName: community });
+
+    const pointsRecord = pointsRecords[1];
 
     if (!pointsRecord) {
       return res.status(404).json({
-        message: 'Community not found for this user',
+        message: 'Expected points record at position [1] not found.',
       });
     }
 
-    const points_by_type = pointsRecord.points_by_type;
+    const { points_by_type } = pointsRecord;
     let totalPoints = 0;
 
     for (const pointType in points_by_type) {
@@ -195,15 +195,16 @@ const claimPoints = async (req, res) => {
 
     await pointsRecord.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       message: 'Unclaimed points claimed successfully',
       data: {
         pointsRecord,
       },
     });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Something went wrong on our end',
     });
   }
