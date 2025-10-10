@@ -12,6 +12,7 @@ const { getPointsHistory } = require('../contollers/pointsHistory');
 const { keychainAuth, keysAuth } = require('../contollers/auth');
 const { registerCommunity } = require('../contollers/communities');
 const { loginUser, registerUser, checkSolBalance} = require('../contollers/offchainUsers');
+const { createFreeLightAccount, getAccountStatus} = require('../contollers/btcLightning.js');
 const  authenticateToken  = require("../middleware/auth");
 const { cloneRepository, createEnvVariables, checkDirectory, checkEnvFile, runDocker } = require("../contollers/communitySetup")
 const { dockerSetupRequest, getDockerSetups, getSingleDockerSetup, confirmDockerRequest, cancelDockerRequest, deleteDockerRequest } = require('../contollers/docker');
@@ -84,6 +85,9 @@ router.get('/btc-balance/:address', checkBtcBal)
 router.get('/address-trx/:address', getAddressTransactions)
 router.get('/btc-machine/:address', checkForBcMachine)
 router.post('/update-account-btc', updateAccountWithBtcInfo);
+
+router.post('/lightning-account', createFreeLightAccount);
+router.get("/account-status/:username", getAccountStatus);
 
 /////admin
 router.post('/admin/login',loginAdmin)
