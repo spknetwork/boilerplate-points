@@ -1,6 +1,8 @@
+const dhive = require('@hiveio/dhive');
 const { PrivateKey } = require("@hiveio/dhive");
 const {  getPrivateKeys, generatePassword } = require("./key-handler");
 const client = require("./client")
+const LightningAccount = require("../models/LightningAccounts.js");
 
 const bridgeApiCall = (endpoint, params) =>
 client.call("bridge", endpoint, params);
@@ -106,6 +108,120 @@ const getCommunity = (name, observer = "") => {
       return null;
     });
 };
+
+const createHiveAccount = async (username) => {
+  try {
+    const existingUser = await LightningAccount.findOne({ username, status: "paid" });
+    if (!existingUser) {
+      throw new Error("No paid user found for this username");
+    }
+
+    const { ownerPubkey, activePubkey, postingPubkey, memoPubkey } = existingUser.keys;
+
+    const accountCreator = process.env.HIVE_ACCOUNT_CREATOR;
+    const activeKey = dhive.PrivateKey.fromString(process.env.HIVE_ACCOUNT_CREATOR_ACTIVE_KEY);
+
+    const tx = await client.broadcast.sendOperations(
+      [
+        [
+          "create_claimed_account",
+          {
+            creator: accountCreator,
+            new_account_name: username,
+            owner: {
+              weight_threshold: 1,
+              account_auths: [],
+              key_auths: [[ownerPubkey, 1]],
+            },
+            active: {
+              weight_threshold: 1,
+              account_auths: [],
+              key_auths: [[activePubkey, 1]],
+            },
+            posting: {
+              weight_threshold: 1,
+              account_auths: [],
+              key_auths: [[postingPubkey, 1]],
+            },
+            memo_key: memoPubkey,
+            json_metadata: "",
+            extensions: [],
+          },
+        ],
+      ],
+      activeKey
+    );
+
+    existingUser.hiveTxId = tx.id;
+    existingUser.status = "account_created";
+    await existingUser.save();
+
+    console.log(`✅ Hive account @${username} created, tx: ${tx.id}`);
+    return tx;
+  } catch (error) {
+    console.error("createHiveAccount error:", error.message);
+    throw error;
+  }
+};
+
+module.exports = createHiveAccount;
+
+// function to start watching transactions
+async function watchPayments(paymentAccount) {
+  console.log(`👀 Watching transactions for @${paymentAccount}...`);
+
+  const stream = await client.blockchain.getOperationsStream();
+
+  for await (const op of stream) {
+    try {
+      if (op.op[0] === "transfer") {
+        const { from, to, amount, memo } = op.op[1];
+
+        
+        // console.log("memo....", memo)
+        
+        // Check if payment is to our account
+        if (to === paymentAccount) {
+          const formatMemo = memo.split("|").map(s => s.trim());
+          const formattedMemo = formatMemo[0];
+
+          console.log(`💸 Payment detected from @${from} of ${amount} with memo "${formattedMemo}"`);
+
+          // Find pending user with this memo (username)
+          const user = await LightningAccount.findOne({ username: formattedMemo, status: "pending" });
+          if (!user) {
+            console.log(`⚠️ No matching pending user found for memo: ${formattedMemo}`);
+            continue;
+          }
+
+          // Update to "paid"
+          user.status = "paid";
+          user.satsPaid = Number(amount.split(" ")[0]); // crude amount parsing
+          user.paidAt = new Date();
+          await user.save();
+
+          console.log(`✅ User ${formattedMemo} marked as paid.`);
+
+          // Trigger hive account creation
+          await createHiveAccount(formattedMemo);
+        }
+      }
+    } catch (err) {
+      console.error("Error processing transaction:", err.message); 
+    }
+  }
+}
+
+// Example usage
+watchPayments("lightningin");
+
+const memo = "test-onboard | #sats 300";
+
+const accountMemo = memo.split("|")[0].trim();
+
+console.log(accountMemo);
+
+
   
   module.exports = {
     getAccount,
