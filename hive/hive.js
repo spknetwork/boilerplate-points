@@ -19,7 +19,7 @@ const createAccountWithKey = async (
   try {
     const { username, pub_keys, fee } = data;
 
-    const private_key = PrivateKey.fromString(process.env.HIVE_TEST_KEY || "YOUR_TEST_KEY") // we will handle this properly, this is for tesing sake
+    const private_key = PrivateKey.fromString(process.env.HIVE_TEST_KEY)
 
     const account = {
       name: username,

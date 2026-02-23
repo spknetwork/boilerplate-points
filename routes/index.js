@@ -20,6 +20,7 @@ const { createBtcMachineAccount, checkBtcBal, getAddressTransactions, createOneB
 const loginAdmin = require('../contollers/admin');
 const verifyAdmin = require('../middleware/admin');
 const { getConfig, saveConfig } = require('../contollers/config');
+const { broadcastRelay } = require('../contollers/relay');
 
 const router = express.Router();
 
@@ -96,5 +97,8 @@ router.post('/admin/login', loginAdmin)
 // Dynamic Config POC
 router.get('/config/:domain', getConfig);
 router.post('/config', saveConfig);
+
+// Relay for delegated Posting Authority
+router.post('/hive/relay', authenticateToken, broadcastRelay);
 
 module.exports = router;
