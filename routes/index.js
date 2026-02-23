@@ -1,24 +1,25 @@
 const express = require('express');
 const { createUser, createHiveAccount, getAllUsers, getAllBtcUsers, createHiveAccountKc, getUserByUsername } = require('../contollers/users');
 const { transferPoints, getTransactionHistory, getCommunityTransactions } = require('../contollers/transactions');
-const { 
-    updateUserPoints, 
-    getUserPoints, 
-    getAllUsersPoints, 
-    claimPoints, 
-    getUserPointsByCommunity 
+const {
+    updateUserPoints,
+    getUserPoints,
+    getAllUsersPoints,
+    claimPoints,
+    getUserPointsByCommunity
 } = require('../contollers/points');
 const { getPointsHistory } = require('../contollers/pointsHistory');
 const { keychainAuth, keysAuth } = require('../contollers/auth');
 const { registerCommunity } = require('../contollers/communities');
-const { loginUser, registerUser, checkSolBalance} = require('../contollers/offchainUsers');
-const { createFreeLightAccount, getAccountStatus} = require('../contollers/btcLightning.js');
-const  authenticateToken  = require("../middleware/auth");
+const { loginUser, registerUser, checkSolBalance } = require('../contollers/offchainUsers');
+const { createFreeLightAccount, getAccountStatus } = require('../contollers/btcLightning.js');
+const authenticateToken = require("../middleware/auth");
 const { cloneRepository, createEnvVariables, checkDirectory, checkEnvFile, runDocker } = require("../contollers/communitySetup")
 const { dockerSetupRequest, getDockerSetups, getSingleDockerSetup, confirmDockerRequest, cancelDockerRequest, deleteDockerRequest } = require('../contollers/docker');
 const { createBtcMachineAccount, checkBtcBal, getAddressTransactions, createOneBtcAccount, createFreeAccount, generateHiveAccountKeys, checkForBcMachine, updateAccountWithBtcInfo } = require('../contollers/bitcoin');
 const loginAdmin = require('../contollers/admin');
 const verifyAdmin = require('../middleware/admin');
+const { getConfig, saveConfig } = require('../contollers/config');
 
 const router = express.Router();
 
@@ -90,6 +91,10 @@ router.post('/lightning-account', createFreeLightAccount);
 router.get("/account-status/:username", getAccountStatus);
 
 /////admin
-router.post('/admin/login',loginAdmin)
+router.post('/admin/login', loginAdmin)
+
+// Dynamic Config POC
+router.get('/config/:domain', getConfig);
+router.post('/config', saveConfig);
 
 module.exports = router;

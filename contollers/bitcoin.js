@@ -40,13 +40,13 @@ const generatePassword = async (length) => {
 // Function to check if a BTC address holds a specific NFT or asset
 async function checkBTCMachineOwnership(address) {
     try {
-    
+
         const apiUrl = `https://api-mainnet.magiceden.dev/v2/ord/btc/runes/wallet/activities/${address}`;
 
         // Make the request to the API with the Authorization header
         const response = await axios.get(apiUrl, {
             headers: {
-                'Authorization': 'Bearer 3d0a7719-4280-45cc-807c-335eada01fc8',
+                'Authorization': `Bearer ${process.env.MAGIC_EDEN_KEY}`,
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             }
@@ -119,7 +119,7 @@ const createBtcMachineAccount = async (req, res) => {
     try {
         const balance = await getBitcoinMainnetBalance(address);
 
-        if(balance < 0.00005) {
+        if (balance < 0.00005) {
             return res.status(400).json({ error: 'You must have at least 0.00005btc to get a free account' });
         }
 
@@ -137,7 +137,7 @@ const createBtcMachineAccount = async (req, res) => {
         }
 
         // Check if the username or BTC address has already been used
-        const existingUser = await User.findOne({ 
+        const existingUser = await User.findOne({
             $or: [{ username }, { bitcoinAddress: address }]
         });
 
@@ -149,7 +149,7 @@ const createBtcMachineAccount = async (req, res) => {
 
         const ownsBTCMachine = ordinals.length > 0;
         if (!ownsBTCMachine) {
-             return res.status(400).json({ error: 'No Bitcoin Machine/ordinals found in the provided address' });
+            return res.status(400).json({ error: 'No Bitcoin Machine/ordinals found in the provided address' });
         }
 
         const accountCreator = process.env.HIVE_ACCOUNT_CREATOR;
@@ -235,11 +235,11 @@ const createOneBtcAccount = async (req, res) => {
     if (!username || !address || !message || !signature || !accountKeys || !ordinalAddress) {
         return res.status(400).json({ error: 'Username, address, message, and signature are required' });
     }
-    
+
     try {
         const balance = await getBitcoinMainnetBalance(address);
 
-        if(balance < 0.00005) {
+        if (balance < 0.00005) {
             return res.status(400).json({ error: 'You must have at least 0.00005btc to get a free account' });
         }
 
@@ -257,7 +257,7 @@ const createOneBtcAccount = async (req, res) => {
         }
 
         // Check if the username or BTC address has already been used
-        const existingUser = await User.findOne({ 
+        const existingUser = await User.findOne({
             $or: [{ username }, { bitcoinAddress: address }]
         });
 
@@ -328,7 +328,7 @@ const createOneBtcAccount = async (req, res) => {
             signature,
             ownsBTCMachine,
         });
-        
+
         newBtcUser.save();
 
         res.json({
@@ -354,7 +354,7 @@ const updateAccountWithBtcInfo = async (req, res) => {
         }
 
         // Check if the BTC address or username already exists in the database
-        const existingUser = await User.findOne({ 
+        const existingUser = await User.findOne({
             $or: [{ username }, { bitcoinAddress: address }]
         });
 
@@ -383,7 +383,7 @@ const updateAccountWithBtcInfo = async (req, res) => {
         }
 
         // Check if the BTC address or username exists in the BitcoinMachines collection
-        const existingBtcMachine = await BitcoinMachines.findOne({ 
+        const existingBtcMachine = await BitcoinMachines.findOne({
             $or: [{ username }, { bitcoinAddress: address }]
         });
 
@@ -422,10 +422,10 @@ const createFreeAccount = async (req, res) => {
 
     console.log({ username, accountKeys })
 
-    if (!username ) {
+    if (!username) {
         return res.status(400).json({ error: 'Username is required' });
     }
-    
+
     try {
 
         // Check if the username or BTC address has already been used
@@ -504,29 +504,29 @@ const createFreeAccount = async (req, res) => {
 
 const checkBtcBal = async (req, res) => {
     try {
-      const { address } = req.params;
-      console.log(address);
-  
-      const result = await getBitcoinMainnetBalance(address);
-      console.log(result);
-  
-      res.json({ success: true, balance: result });
+        const { address } = req.params;
+        console.log(address);
+
+        const result = await getBitcoinMainnetBalance(address);
+        console.log(result);
+
+        res.json({ success: true, balance: result });
     } catch (error) {
-      console.error('Error fetching Bitcoin balance:', error);
-      res.status(500).json({ success: false, message: 'Error fetching Bitcoin balance' });
+        console.error('Error fetching Bitcoin balance:', error);
+        res.status(500).json({ success: false, message: 'Error fetching Bitcoin balance' });
     }
-  };
+};
 
 const getAddressTransactions = async (req, res) => {
     try {
         const { address } = req.params;
         console.log(address)
 
-        const result = await  getBitcoinAddressTransactions(address);
+        const result = await getBitcoinAddressTransactions(address);
         console.log(result)
         res.json({ success: true, transactions: result });
     } catch (error) {
-        
+
     }
 }
 
@@ -535,31 +535,31 @@ const checkForBcMachine = async (req, res) => {
         const { address } = req.params;
         console.log(address)
 
-        const result = await  checkBTCMachineOwnership(address);
-        console.log("result",result)
-        if(!result) {
+        const result = await checkBTCMachineOwnership(address);
+        console.log("result", result)
+        if (!result) {
             return res.status(400).json({
                 success: false,
                 message: 'Bitcoin address has no ordinal/machine',
-              });
+            });
         }
 
         return res.status(400).json({
             success: true,
             transactions: result
-          });
+        });
     } catch (error) {
-        
+
     }
 }
 
 // async function fetchOrdinals(address) {
 //     try {
 //         const apiUrl = `https://ordinals.com/api/address/${address}`; // Replace with the correct API endpoint.
-        
+
 //         // Fetch data from the API
 //         const response = await axios.get(apiUrl);
-        
+
 //         // Assuming the API returns a list of ordinals
 //         const ordinals = response.data;
 
@@ -583,16 +583,16 @@ const checkForBcMachine = async (req, res) => {
 // }
 const fetchOrdinals = async (address) => {
     const API_URL = `https://api.hiro.so/ordinals/v1/inscriptions?address=${address}`;
-  
+
     try {
-      const response = await axios.get(API_URL);
-      console.log(response.data.results.length)
-    
-      return response.data.results
+        const response = await axios.get(API_URL);
+        console.log(response.data.results.length)
+
+        return response.data.results
     } catch (error) {
-      console.error("Failed to fetch ordinals:", error.message);
-      return [];
+        console.error("Failed to fetch ordinals:", error.message);
+        return [];
     }
-  };
+};
 
 module.exports = { checkBTCMachineOwnership, createBtcMachineAccount, checkBtcBal, getAddressTransactions, createOneBtcAccount, createFreeAccount, generateHiveAccountKeys, checkForBcMachine, updateAccountWithBtcInfo };

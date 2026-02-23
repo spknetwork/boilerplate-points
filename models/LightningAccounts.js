@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const lightningAccountSchema = new mongoose.Schema({
-    username: {
+  username: {
     type: String,
     required: true,
     unique: true, // prevent duplicate Hive usernames
@@ -58,8 +58,12 @@ const lightningAccountSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "paid", "account_created", "failed"],
+    enum: ["pending", "paid", "account_created", "failed", "invalid_name"],
     default: "pending",
+  },
+  jsonMetadata: {
+    type: String,
+    default: "",
   },
   paidAt: {
     type: Date,
