@@ -14,9 +14,11 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
+    origin: "*", // Or specify exact frontend domain if preferred
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  allowEIO3: true // Support older clients if necessary
 });
 
 const port = process.env.PORT || 4000;
