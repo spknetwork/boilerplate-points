@@ -9,7 +9,7 @@ const User = require('../models/User');
 
 const keychainAuth = async (req, res) => {
   try {
-    const { username, ts, sig, community } = req.query;
+    const { username, ts, sig, community, message } = req.query;
     let response;
 
     if (process.env.NODE_ENV === 'production') {
@@ -24,8 +24,12 @@ const keychainAuth = async (req, res) => {
 
     let validSignature = false;
 
+    // If a custom message is provided (e.g. from a reused login signature), use it.
+    // Otherwise, use the standard ${username}${ts} format.
+    const challenge = message ? message : `${username}${ts}`;
+
     const publicKey = Signature.fromString(sig)
-      .recover(cryptoUtils.sha256(`${username}${ts}`))
+      .recover(cryptoUtils.sha256(challenge))
       .toString();
 
     const thresholdPosting = account.posting.weight_threshold;
@@ -164,14 +168,14 @@ const keychainAuth = async (req, res) => {
             message: 'Login points already awarded twice today.',
           });
         }
-        
+
         existingPointsRecord.points_by_type.login.points += 10;
         existingPointsRecord.unclaimedPoints += 10;
         existingPointsRecord.points_by_type.login.awarded_timestamps.push(currentDate);
         await existingPointsRecord.save();
       }
-      console.log("test",user._id)
-      
+      console.log("test", user._id)
+
       const token = JWT.sign(
         {
           username: username,
@@ -181,20 +185,20 @@ const keychainAuth = async (req, res) => {
         {
           expiresIn: '12000h', //test
         }
-        );
-        
-        response = {
-          ...user,
+      );
+
+      response = {
+        ...user,
         token,
       };
-  
+
       await PointsHistory.create({
         user: user._id,
         community,
         operationType: "login",
         pointsEarned: 10,
       });
-      
+
       return res.status(200).json({
         success: true,
         response,
@@ -211,7 +215,7 @@ const keychainAuth = async (req, res) => {
 
 const keysAuth = async (req, res) => {
   try {
-    const { username, key, community} = req.body;
+    const { username, key, community } = req.body;
     console.log(username, key)
 
     let validSignature = false;
