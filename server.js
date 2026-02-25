@@ -195,7 +195,16 @@ const startServer = async () => {
           console.log(`✅ [Meta] Found config for ${cleanedDomain}: ${config.communityName}`);
           const name = config.communityName || "Breakaway Community";
           const description = config.communityDescription || "A decentralized community powered by Breakaway.";
-          const logo = config.logoUrl || "/vite.svg";
+          let logo = config.logoUrl || "/vite.svg";
+
+          // Force absolute URL for the logo (required by Telegram/Twitter/FB)
+          if (logo.startsWith('/')) {
+            logo = `https://${domain}${logo}`;
+          } else if (!logo.startsWith('http')) {
+            logo = `https://${logo}`;
+          }
+
+          console.log(`🖼️ [Meta] Using absolute logo URL: ${logo}`);
 
           html = html.replace(/{{COMMUNITY_NAME}}/g, name);
           html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, description);
@@ -204,7 +213,9 @@ const startServer = async () => {
           console.warn(`⚠️ [Meta] No config found in DB for domain: "${cleanedDomain}" - using defaults`);
           html = html.replace(/{{COMMUNITY_NAME}}/g, "Breakaway Community");
           html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, "A decentralized community powered by Breakaway infrastructure.");
-          html = html.replace(/{{COMMUNITY_LOGO}}/g, "/vite.svg");
+
+          const fallbackLogo = `https://${domain}/vite.svg`;
+          html = html.replace(/{{COMMUNITY_LOGO}}/g, fallbackLogo);
         }
 
         // Final check: did we actually replace anything?
