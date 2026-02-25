@@ -197,14 +197,20 @@ const startServer = async () => {
           const description = config.communityDescription || "A decentralized community powered by Breakaway.";
           let logo = config.logoUrl || "/vite.svg";
 
+          // Robust domain detection
+          const host = req.headers['x-forwarded-host'] || req.headers.host || domain;
+
           // Force absolute URL for the logo (required by Telegram/Twitter/FB)
-          if (logo.startsWith('/')) {
-            logo = `https://${domain}${logo}`;
-          } else if (!logo.startsWith('http')) {
-            logo = `https://${logo}`;
+          if (logo.startsWith('http')) {
+            // Already absolute, do nothing
+          } else if (logo.startsWith('/')) {
+            logo = `https://${host}${logo}`;
+          } else {
+            // Relative like "logo.png"
+            logo = `https://${host}/${logo}`;
           }
 
-          console.log(`🖼️ [Meta] Using absolute logo URL: ${logo}`);
+          console.log(`🖼️ [Meta] Injected Logo URL: ${logo}`);
 
           html = html.replace(/{{COMMUNITY_NAME}}/g, name);
           html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, description);
@@ -214,7 +220,8 @@ const startServer = async () => {
           html = html.replace(/{{COMMUNITY_NAME}}/g, "Breakaway Community");
           html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, "A decentralized community powered by Breakaway infrastructure.");
 
-          const fallbackLogo = `https://${domain}/vite.svg`;
+          const host = req.headers['x-forwarded-host'] || req.headers.host || domain;
+          const fallbackLogo = `https://${host}/vite.svg`;
           html = html.replace(/{{COMMUNITY_LOGO}}/g, fallbackLogo);
         }
 
