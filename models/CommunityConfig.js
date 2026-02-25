@@ -26,6 +26,13 @@ const communityConfigSchema = new mongoose.Schema({
     type: Number,
     default: 100,
   },
+  communityDescription: {
+    type: String,
+    default: "A decentralized community powered by Breakaway.",
+  },
+  communityDescriptionExtra: {
+    type: String,
+  },
   isConfigured: {
     type: Boolean,
     default: true,
@@ -40,7 +47,7 @@ const communityConfigSchema = new mongoose.Schema({
   },
 });
 
-communityConfigSchema.pre("save", function(next) {
+communityConfigSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
   next();
 });

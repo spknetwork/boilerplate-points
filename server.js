@@ -15,23 +15,37 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
-      // Allow any origin during development/production for flexibility
-      // Or you can specify: if (origin === 'https://yourdomain.com') ...
-      callback(null, true);
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://conf.breakaway.community',
+        'https://breakaway.community',
+        'https://breakaway-communities.netlify.app'
+      ];
+      if (!origin || allowedOrigins.includes(origin) || origin.includes('netlify.app')) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Still allow during debugging, but explicitly calling true
+      }
     },
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     credentials: true
   },
   allowEIO3: true
 });
-
 const port = process.env.PORT || 4000;
 
 const { watchPayments } = require("./hive/hive.js");
 
 app.use(express.json());
 
-app.use(cors());
+// Explicit app-level CORS
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 app.use(express.urlencoded({ extended: true }));
 
