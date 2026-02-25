@@ -164,17 +164,30 @@ const startServer = async () => {
       }
 
       try {
+        // Skip injection if it's clearly not a page request (has extension other than .html)
+        const ext = path.extname(req.path).toLowerCase();
+        if (ext && ext !== '.html') {
+          return next();
+        }
+
         const domain = req.hostname;
         const frontendPath = process.env.FRONTEND_PATH || 'public';
-        const indexPath = path.resolve(__dirname, frontendPath, 'index.html');
+
+        // Fix: handle absolute paths correctly
+        const indexPath = path.isAbsolute(frontendPath)
+          ? path.join(frontendPath, 'index.html')
+          : path.resolve(__dirname, frontendPath, 'index.html');
 
         console.log(`🔍 [Meta] Request for ${domain}${req.path}`);
-        console.log(`📂 [Meta] Looking for index.html at: ${indexPath}`);
-        console.log(`📁 [Meta] Current __dirname: ${__dirname}`);
+        if (process.env.DEBUG_META === 'true') {
+          console.log(`📂 [Meta] Looking for index.html at: ${indexPath}`);
+        }
 
         if (!fs.existsSync(indexPath)) {
-          console.warn(`⚠️ [Meta] index.html NOT FOUND at ${indexPath}. Please set FRONTEND_PATH in .env or create a symlink.`);
-          return res.status(500).send("Frontend assets not found in backend 'public' folder. See logs.");
+          if (process.env.DEBUG_META === 'true') {
+            console.warn(`⚠️ [Meta] index.html NOT FOUND at ${indexPath}`);
+          }
+          return next(); // Fall back to default static serving
         }
 
         let html = fs.readFileSync(indexPath, 'utf8');
@@ -244,7 +257,8 @@ const startServer = async () => {
 
     // Static assets
     const frontendPath = process.env.FRONTEND_PATH || 'public';
-    app.use(express.static(path.join(__dirname, frontendPath)));
+    const staticPath = path.isAbsolute(frontendPath) ? frontendPath : path.join(__dirname, frontendPath);
+    app.use(express.static(staticPath));
 
     server.listen(port, () => {
       console.log(`Server is running on port ${port}`);
