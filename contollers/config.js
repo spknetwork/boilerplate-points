@@ -39,7 +39,9 @@ const saveConfig = async (req, res) => {
             hiveCommunityId,
             logoUrl,
             primaryColor,
-            onboardingSats
+            onboardingSats,
+            communityDescription,
+            communityDescriptionExtra
         } = req.body;
 
         if (!domain || !communityName || !hiveCommunityId) {
@@ -60,6 +62,8 @@ const saveConfig = async (req, res) => {
             config.logoUrl = logoUrl;
             config.primaryColor = primaryColor;
             config.onboardingSats = onboardingSats;
+            config.communityDescription = communityDescription;
+            config.communityDescriptionExtra = communityDescriptionExtra;
             await config.save();
         } else {
             // Create new
@@ -70,6 +74,8 @@ const saveConfig = async (req, res) => {
                 logoUrl,
                 primaryColor,
                 onboardingSats,
+                communityDescription,
+                communityDescriptionExtra,
                 isConfigured: true
             });
         }
