@@ -14,6 +14,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 
 const app = express();
+app.set('trust proxy', true); // Trust headers from Nginx (Cloudflare, etc.)
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -164,9 +165,13 @@ const startServer = async () => {
 
       try {
         const domain = req.hostname;
-        const indexPath = path.join(__dirname, 'public', 'index.html'); // Adjust this to your build folder
+        const frontendPath = process.env.FRONTEND_PATH || 'public';
+        const indexPath = path.join(__dirname, frontendPath, 'index.html');
+
+        console.log(`🔍 [Meta] Request for ${domain}${req.path} - checking ${indexPath}`);
 
         if (!fs.existsSync(indexPath)) {
+          console.warn(`⚠️ [Meta] index.html not found at ${indexPath}`);
           return next();
         }
 
@@ -174,11 +179,11 @@ const startServer = async () => {
 
         // Fetch community config
         let cleanedDomain = domain.toLowerCase().replace(/^(https?:\/\/)/, "").split(":")[0];
-        if (cleanedDomain === "localhost") cleanedDomain = "localhost";
 
         const config = await CommunityConfig.findOne({ domain: cleanedDomain });
 
         if (config) {
+          console.log(`✅ [Meta] Injecting config for domain: ${cleanedDomain}`);
           const name = config.communityName || "Breakaway Community";
           const description = config.communityDescription || "A decentralized community powered by Breakaway.";
           const logo = config.logoUrl || "/vite.svg";
@@ -187,21 +192,23 @@ const startServer = async () => {
           html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, description);
           html = html.replace(/{{COMMUNITY_LOGO}}/g, logo);
         } else {
+          console.warn(`⚠️ [Meta] No config found for domain: ${cleanedDomain} - using defaults`);
           // Fallback for unknown communities
           html = html.replace(/{{COMMUNITY_NAME}}/g, "Breakaway Community");
-          html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, "A decentralized community powered by Breakaway.");
+          html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, "A decentralized community powered by Breakaway infrastructure.");
           html = html.replace(/{{COMMUNITY_LOGO}}/g, "/vite.svg");
         }
 
         res.send(html);
       } catch (error) {
-        console.error("Meta Injection Error:", error);
+        console.error("❌ [Meta] Injection Error:", error.message);
         next();
       }
     });
 
     // Static assets
-    app.use(express.static(path.join(__dirname, 'public')));
+    const frontendPath = process.env.FRONTEND_PATH || 'public';
+    app.use(express.static(path.join(__dirname, frontendPath)));
 
     server.listen(port, () => {
       console.log(`Server is running on port ${port}`);
