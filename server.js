@@ -228,10 +228,18 @@ const startServer = async () => {
           html = html.replace(/{{COMMUNITY_NAME}}/g, name);
           html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, description);
           html = html.replace(/{{COMMUNITY_LOGO}}/g, logo);
+
+          if (process.env.DEBUG_META === 'true') {
+            console.log(`📝 [Meta] Injected Name: ${name}`);
+            console.log(`📝 [Meta] Injected Description: ${description}`);
+          }
         } else {
           console.warn(`⚠️ [Meta] No config found in DB for domain: "${cleanedDomain}" - using defaults`);
-          html = html.replace(/{{COMMUNITY_NAME}}/g, "Breakaway Community");
-          html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, "A decentralized community powered by Breakaway infrastructure.");
+          const defaultName = "Breakaway Community";
+          const defaultDesc = "A decentralized community powered by Breakaway infrastructure.";
+
+          html = html.replace(/{{COMMUNITY_NAME}}/g, defaultName);
+          html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, defaultDesc);
 
           const host = req.headers['x-forwarded-host'] || req.headers.host || domain;
           const fallbackLogo = `https://${host}/vite.svg`;
@@ -242,13 +250,14 @@ const startServer = async () => {
         if (html.includes('{{COMMUNITY_NAME}}')) {
           console.error("❌ [Meta] Replacement FAILED! Placeholders still present in HTML.");
         } else {
-          console.log("🚀 [Meta] Injection successful. Sending HTML...");
+          console.log(`🚀 [Meta] Injection successful for ${cleanedDomain}. Sending HTML...`);
         }
 
         // Log the first 400 chars of the head to verify
         console.log("📝 [Meta] HTML Head Snippet:", html.substring(html.indexOf('<head>'), html.indexOf('<head>') + 400));
 
-        res.send(html);
+        res.set('Content-Type', 'text/html');
+        return res.send(html);
       } catch (error) {
         console.error("❌ [Meta] Injection Error:", error.message);
         next();
