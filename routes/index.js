@@ -21,6 +21,8 @@ const loginAdmin = require('../contollers/admin');
 const verifyAdmin = require('../middleware/admin');
 const { getConfig, saveConfig } = require('../contollers/config');
 const { broadcastRelay } = require('../contollers/relay');
+const { getMessages, editMessage } = require('../contollers/messages');
+const { createStory, getStories } = require('../contollers/stories');
 
 const router = express.Router();
 
@@ -100,5 +102,13 @@ router.post('/config', saveConfig);
 
 // Relay for delegated Posting Authority
 router.post('/hive/relay', authenticateToken, broadcastRelay);
+
+// Messaging
+router.get('/api/messages', getMessages);
+router.patch('/api/messages/:id', editMessage);
+
+// Stories
+router.get('/api/stories', getStories);
+router.post('/api/stories', authenticateToken, createStory);
 
 module.exports = router;

@@ -154,8 +154,7 @@ const startServer = async () => {
     server.listen(port, () => {
       console.log(`Server is running on port ${port}`);
 
-      // Start watching for onboarding payments
-      // bac.onboard will receive the funds, while oracle-d (or configured creator) will create the account
+      // Start watching for onboarding payments and messages
       const watcherAccount = process.env.HIVE_PAYMENT_RECEIVER || process.env.HIVE_ACCOUNT_CREATOR || 'oracle-d';
       watchPayments(watcherAccount, io).catch(err => {
         console.error("Failed to start Hive payment watcher:", err);

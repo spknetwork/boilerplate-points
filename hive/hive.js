@@ -173,23 +173,56 @@ const createHiveAccount = async (username) => {
 
 const WatcherState = require("../models/WatcherState");
 
+const Message = require("../models/Message.js");
+
 // function to start watching transactions
-async function watchPayments(paymentAccount) {
+async function watchPayments(paymentAccount, io) {
   const targets = ["bac.onboard"].map(a => a.toLowerCase());
-  console.log(`🚀 Starting high-speed payment watcher for: ${targets.join(", ")}`);
+  const messagingId = "messaging";
+  console.log(`🚀 Starting high-speed payment/message watcher for: ${targets.join(", ")} & '${messagingId}'`);
+
+  const processMessagingOp = async (op, trx_id, timestamp) => {
+    try {
+      if (op.id !== messagingId) return;
+      const parsed = JSON.parse(op.json);
+      if (!Array.isArray(parsed) || parsed[0] !== 'message') return;
+
+      const { to, message, v } = parsed[1];
+      const from = op.required_posting_auths[0];
+
+      if (!from || !to || !message) return;
+
+      // Save to DB (upsert based on trx_id to avoid duplicates)
+      const msgDoc = await Message.findOneAndUpdate(
+        { trx_id },
+        { from, to, message, timestamp, v: v || '1.0', trx_id },
+        { upsert: true, new: true }
+      );
+
+      console.log(`✉️ Indexed message from @${from} to @${to}`);
+
+      // Emit real-time notification via Socket.io
+      if (io) {
+        io.to(to).emit('new_message', msgDoc);
+        io.to(from).emit('new_message', msgDoc); // Sync for sender
+      }
+    } catch (e) {
+      console.error("Error processing messaging op:", e.message);
+    }
+  };
 
   const reconcileHistory = async () => {
-    console.log(`[Reconciler] Scanning history for ${targets.join(", ")}...`);
+    console.log(`[Reconciler] Scanning history...`);
     for (const target of targets) {
       try {
         const history = await client.call('condenser_api', 'get_account_history', [target, -1, 15]);
-        if (!Array.isArray(history)) {
-          console.warn(`[Reconciler] Non-array response for @${target}:`, history);
-          continue;
-        }
+        if (!Array.isArray(history)) continue;
 
         for (const item of history) {
           const op = item[1].op;
+          const trx_id = item[1].trx_id;
+          const timestamp = item[1].timestamp;
+
           if (op[0] === 'transfer') {
             const { from, to, amount, memo } = op[1];
             if (targets.includes(to.toLowerCase())) {
@@ -209,13 +242,15 @@ async function watchPayments(paymentAccount) {
                 }
 
                 try {
-                  console.log(`⚡ [Reconciler] Attempting fulfillment for @${user.username} (status: ${user.status})...`);
+                  console.log(`⚡ [Reconciler] Attempting fulfillment for @${user.username}...`);
                   await createHiveAccount(user.username);
                 } catch (err) {
                   console.error(`❌ [Reconciler] Fulfillment error for @${user.username}:`, err.message);
                 }
               }
             }
+          } else if (op[0] === 'custom_json') {
+            await processMessagingOp(op[1], trx_id, timestamp);
           }
         }
       } catch (err) {
@@ -259,6 +294,8 @@ async function watchPayments(paymentAccount) {
               }
             }
           }
+        } else if (op.op[0] === "custom_json") {
+          await processMessagingOp(op.op[1], op.trx_id, op.timestamp);
         }
       }
     } catch (err) {
