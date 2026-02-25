@@ -166,13 +166,15 @@ const startServer = async () => {
       try {
         const domain = req.hostname;
         const frontendPath = process.env.FRONTEND_PATH || 'public';
-        const indexPath = path.join(__dirname, frontendPath, 'index.html');
+        const indexPath = path.resolve(__dirname, frontendPath, 'index.html');
 
-        console.log(`🔍 [Meta] Request for ${domain}${req.path} - checking ${indexPath}`);
+        console.log(`🔍 [Meta] Request for ${domain}${req.path}`);
+        console.log(`📂 [Meta] Looking for index.html at: ${indexPath}`);
+        console.log(`📁 [Meta] Current __dirname: ${__dirname}`);
 
         if (!fs.existsSync(indexPath)) {
-          console.warn(`⚠️ [Meta] index.html not found at ${indexPath}`);
-          return next();
+          console.warn(`⚠️ [Meta] index.html NOT FOUND at ${indexPath}. Please set FRONTEND_PATH in .env or create a symlink.`);
+          return res.status(500).send("Frontend assets not found in backend 'public' folder. See logs.");
         }
 
         let html = fs.readFileSync(indexPath, 'utf8');
