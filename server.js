@@ -180,10 +180,17 @@ const startServer = async () => {
         // Fetch community config
         let cleanedDomain = domain.toLowerCase().replace(/^(https?:\/\/)/, "").split(":")[0];
 
+        // Debug: Log headers to see what we're getting from proxy
+        console.log(`📡 [Meta] Headers:`, {
+          host: req.headers.host,
+          'x-forwarded-host': req.headers['x-forwarded-host'],
+          hostname: req.hostname
+        });
+
         const config = await CommunityConfig.findOne({ domain: cleanedDomain });
 
         if (config) {
-          console.log(`✅ [Meta] Injecting config for domain: ${cleanedDomain}`);
+          console.log(`✅ [Meta] Found config for ${cleanedDomain}: ${config.communityName}`);
           const name = config.communityName || "Breakaway Community";
           const description = config.communityDescription || "A decentralized community powered by Breakaway.";
           const logo = config.logoUrl || "/vite.svg";
@@ -192,12 +199,21 @@ const startServer = async () => {
           html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, description);
           html = html.replace(/{{COMMUNITY_LOGO}}/g, logo);
         } else {
-          console.warn(`⚠️ [Meta] No config found for domain: ${cleanedDomain} - using defaults`);
-          // Fallback for unknown communities
+          console.warn(`⚠️ [Meta] No config found in DB for domain: "${cleanedDomain}" - using defaults`);
           html = html.replace(/{{COMMUNITY_NAME}}/g, "Breakaway Community");
           html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, "A decentralized community powered by Breakaway infrastructure.");
           html = html.replace(/{{COMMUNITY_LOGO}}/g, "/vite.svg");
         }
+
+        // Final check: did we actually replace anything?
+        if (html.includes('{{COMMUNITY_NAME}}')) {
+          console.error("❌ [Meta] Replacement FAILED! Placeholders still present in HTML.");
+        } else {
+          console.log("🚀 [Meta] Injection successful. Sending HTML...");
+        }
+
+        // Log the first 400 chars of the head to verify
+        console.log("📝 [Meta] HTML Head Snippet:", html.substring(html.indexOf('<head>'), html.indexOf('<head>') + 400));
 
         res.send(html);
       } catch (error) {
