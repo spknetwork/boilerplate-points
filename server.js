@@ -3,6 +3,9 @@ const connectDb = require("./db.js");
 const routes = require('./routes/index.js');
 const cors = require("cors");
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+const CommunityConfig = require("./models/CommunityConfig");
 
 // chain/index.js is a standalone wallet key derivation demo — not used by the points API
 // const getMemonic = require("./chain/index.js")
@@ -150,6 +153,55 @@ const startServer = async () => {
     await connectDb();
 
     app.use('/', routes);
+
+    // Dynamic Meta Injection Middleware for Frontend
+    // This serves the index.html and replaces placeholders with community config
+    app.get('*', async (req, res, next) => {
+      // Skip API routes
+      if (req.path.startsWith('/api') || req.path.includes('.')) {
+        return next();
+      }
+
+      try {
+        const domain = req.hostname;
+        const indexPath = path.join(__dirname, 'public', 'index.html'); // Adjust this to your build folder
+
+        if (!fs.existsSync(indexPath)) {
+          return next();
+        }
+
+        let html = fs.readFileSync(indexPath, 'utf8');
+
+        // Fetch community config
+        let cleanedDomain = domain.toLowerCase().replace(/^(https?:\/\/)/, "").split(":")[0];
+        if (cleanedDomain === "localhost") cleanedDomain = "localhost";
+
+        const config = await CommunityConfig.findOne({ domain: cleanedDomain });
+
+        if (config) {
+          const name = config.communityName || "Breakaway Community";
+          const description = config.communityDescription || "A decentralized community powered by Breakaway.";
+          const logo = config.logoUrl || "/vite.svg";
+
+          html = html.replace(/{{COMMUNITY_NAME}}/g, name);
+          html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, description);
+          html = html.replace(/{{COMMUNITY_LOGO}}/g, logo);
+        } else {
+          // Fallback for unknown communities
+          html = html.replace(/{{COMMUNITY_NAME}}/g, "Breakaway Community");
+          html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, "A decentralized community powered by Breakaway.");
+          html = html.replace(/{{COMMUNITY_LOGO}}/g, "/vite.svg");
+        }
+
+        res.send(html);
+      } catch (error) {
+        console.error("Meta Injection Error:", error);
+        next();
+      }
+    });
+
+    // Static assets
+    app.use(express.static(path.join(__dirname, 'public')));
 
     server.listen(port, () => {
       console.log(`Server is running on port ${port}`);
