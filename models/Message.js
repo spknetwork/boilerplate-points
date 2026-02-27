@@ -5,7 +5,7 @@ const messageSchema = new mongoose.Schema({
     to: { type: String, required: true, index: true },
     message: { type: String, required: true },
     timestamp: { type: Date, default: Date.now, index: true },
-    trx_id: { type: String, required: true, unique: true, index: true },
+    trx_id: { type: String, unique: true, sparse: true, index: true },
     v: { type: String, default: '1.0' },
     edited: { type: Boolean, default: false },
     editedAt: { type: Date }

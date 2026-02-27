@@ -78,4 +78,34 @@ const editMessage = async (req, res) => {
     }
 };
 
-module.exports = { getMessages, editMessage };
+/**
+ * Save a new message
+ * POST /api/messages
+ * Body: { from, to, message, timestamp, v }
+ */
+const saveMessage = async (req, res) => {
+    try {
+        const { from, to, message, timestamp, v = '1.0' } = req.body;
+
+        if (!from || !to || !message) {
+            return res.status(400).json({ success: false, error: "from, to, and message are required" });
+        }
+
+        const msgDoc = new Message({
+            from,
+            to,
+            message,
+            timestamp: timestamp || new Date().toISOString(),
+            v,
+            trx_id: `api_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        });
+
+        const saved = await msgDoc.save();
+        return res.status(201).json({ success: true, message: saved });
+    } catch (error) {
+        console.error("SaveMessage Error:", error.message);
+        return res.status(500).json({ success: false, error: "Failed to save message" });
+    }
+};
+
+module.exports = { getMessages, editMessage, saveMessage };

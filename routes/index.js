@@ -21,8 +21,9 @@ const loginAdmin = require('../contollers/admin');
 const verifyAdmin = require('../middleware/admin');
 const { getConfig, saveConfig } = require('../contollers/config');
 const { broadcastRelay } = require('../contollers/relay');
-const { getMessages, editMessage } = require('../contollers/messages');
+const { getMessages, editMessage, saveMessage } = require('../contollers/messages');
 const { createStory, getStories } = require('../contollers/stories');
+const { askAI } = require('../contollers/ai');
 
 const router = express.Router();
 
@@ -105,10 +106,13 @@ router.post('/hive/relay', authenticateToken, broadcastRelay);
 
 // Messaging
 router.get('/api/messages', getMessages);
+router.post('/api/messages', saveMessage);
 router.patch('/api/messages/:id', editMessage);
 
 // Stories
 router.get('/api/stories', getStories);
 router.post('/api/stories', authenticateToken, createStory);
 
+// AI Assistant 
+router.post("/api/ai/ask", askAI); 
 module.exports = router;
