@@ -40,6 +40,7 @@ const io = new Server(server, {
 const port = process.env.PORT || 4000;
 
 const { watchPayments } = require("./hive/hive.js");
+const { ensureDailyContainer } = require("./hive/storyChain.js");
 
 app.use(express.json());
 
@@ -277,6 +278,13 @@ const startServer = async () => {
       watchPayments(watcherAccount, io).catch(err => {
         console.error("Failed to start Hive payment watcher:", err);
       });
+
+      // 🗓️ Daily story container cron — runs immediately then every hour
+      // Creates today's container post on Hive if it doesn't exist yet
+      ensureDailyContainer().catch(err => console.error('Story container init error:', err.message));
+      setInterval(() => {
+        ensureDailyContainer().catch(err => console.error('Story container cron error:', err.message));
+      }, 60 * 60 * 1000); // every hour (safe to re-run, skips if already exists)
     });
   } catch (err) {
     console.error("Failed to start server:", err.message);

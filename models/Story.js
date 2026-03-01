@@ -17,7 +17,9 @@ const storySchema = new mongoose.Schema({
     stats: {
         likes: { type: Number, default: 0 },
         tips: { type: Number, default: 0 }
-    }
+    },
+    // Onchain reference — populated after broadcast succeeds
+    hiveTrxId: { type: String, default: null }
 }, {
     timestamps: true
 });
