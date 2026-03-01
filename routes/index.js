@@ -22,7 +22,7 @@ const verifyAdmin = require('../middleware/admin');
 const { getConfig, saveConfig } = require('../contollers/config');
 const { broadcastRelay } = require('../contollers/relay');
 const { getMessages, editMessage, saveMessage } = require('../contollers/messages');
-const { createStory, getStories } = require('../contollers/stories');
+const { createStory, getStories, getOnchainStories, getStoryContainer } = require('../contollers/stories');
 const { askAI } = require('../contollers/ai');
 
 const router = express.Router();
@@ -109,10 +109,14 @@ router.get('/api/messages', getMessages);
 router.post('/api/messages', saveMessage);
 router.patch('/api/messages/:id', editMessage);
 
-// Stories
+// Stories (offchain)
 router.get('/api/stories', getStories);
 router.post('/api/stories', authenticateToken, createStory);
+// Stories (onchain — Hive blockchain)
+router.get('/api/stories/onchain', getOnchainStories);
+// Get today's container (and create if not exists) before frontend onchain broadcast
+router.get('/api/stories/container', getStoryContainer);
 
 // AI Assistant 
-router.post("/api/ai/ask", askAI); 
+router.post("/api/ai/ask", askAI);
 module.exports = router;
