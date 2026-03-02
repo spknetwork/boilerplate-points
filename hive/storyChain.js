@@ -177,11 +177,101 @@ async function getOnchainStories(dateStr = null) {
     }
 }
 
+/**
+ * Returns the deterministic permlink for today's shorts container
+ * Format: bac-shorts-YYYY-MM-DD
+ */
+function getTodayShortsPermlink(date = new Date()) {
+    const y = date.getUTCFullYear();
+    const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(date.getUTCDate()).padStart(2, '0');
+    return `bac-shorts-${y}-${m}-${d}`;
+}
+
+/**
+ * Check if the daily shorts container exists and create it if not.
+ */
+async function ensureDailyShortsContainer() {
+    if (!STORY_POSTING_KEY) return null;
+
+    const permlink = getTodayShortsPermlink();
+    const today = new Date().toISOString().split('T')[0];
+
+    try {
+        const exists = await containerExists(permlink);
+        if (exists) return { author: STORY_ACCOUNT, permlink };
+
+        const key = PrivateKey.fromString(STORY_POSTING_KEY);
+        const op = ['comment', {
+            parent_author: '',
+            parent_permlink: 'bac-shorts',
+            author: STORY_ACCOUNT,
+            permlink,
+            title: `BAC Shorts — ${today}`,
+            body: `Daily shorts container for Breakaway Communities — ${today}.\n\nAll community short videos for this day are replies to this post.`,
+            json_metadata: JSON.stringify({
+                app: APP_TAG,
+                type: 'shorts-container',
+                date: today,
+                tags: ['bac-shorts', 'breakaway', 'shorts', 'video']
+            })
+        }];
+
+        await client.broadcast.sendOperations([op], key);
+        return { author: STORY_ACCOUNT, permlink };
+    } catch (err) {
+        console.error(`❌ [ShortsChain] Failed to create container:`, err.message);
+        return null;
+    }
+}
+
+/**
+ * Broadcasts a short as a Hive comment reply to today's shorts container.
+ */
+async function postShortOnchain(username, postingKey, content) {
+    if (!postingKey) return null;
+
+    const containerPermlink = getTodayShortsPermlink();
+    const permlink = `bac-short-${username}-${Date.now()}`;
+
+    let body = content.caption || '';
+    if (content.videoUrl) {
+        body = `Video: ${content.videoUrl}\n\n${body}`;
+    }
+
+    try {
+        const key = PrivateKey.fromString(postingKey);
+        const op = ['comment', {
+            parent_author: STORY_ACCOUNT,
+            parent_permlink: containerPermlink,
+            author: username,
+            permlink,
+            title: '',
+            body,
+            json_metadata: JSON.stringify({
+                app: APP_TAG,
+                type: 'short',
+                content,
+                tags: ['bac-shorts', 'breakaway']
+            })
+        }];
+
+        const tx = await client.broadcast.sendOperations([op], key);
+        return { trxId: tx.id, permlink };
+    } catch (err) {
+        console.error(`❌ [ShortsChain] Broadcast failed for @${username}:`, err.message);
+        return null;
+    }
+}
+
 module.exports = {
     getTodayContainerPermlink,
     getContainerPermlink,
     ensureDailyContainer,
     postStoryOnchain,
     getOnchainStories,
+    getTodayShortsPermlink,
+    ensureDailyShortsContainer,
+    postShortOnchain,
     STORY_ACCOUNT
 };

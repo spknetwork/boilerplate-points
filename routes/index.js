@@ -22,7 +22,9 @@ const verifyAdmin = require('../middleware/admin');
 const { getConfig, saveConfig } = require('../contollers/config');
 const { broadcastRelay } = require('../contollers/relay');
 const { getMessages, editMessage, saveMessage } = require('../contollers/messages');
-const { createStory, getStories, getOnchainStories, getStoryContainer } = require('../contollers/stories');
+const { createStory, getStories, getOnchainStories, getStoryContainer, recordStoryTip } = require('../contollers/stories');
+const { createShort, getShorts, getShortsContainer, recordTip } = require('../contollers/shorts');
+
 const { askAI } = require('../contollers/ai');
 
 const router = express.Router();
@@ -116,6 +118,15 @@ router.post('/api/stories', authenticateToken, createStory);
 router.get('/api/stories/onchain', getOnchainStories);
 // Get today's container (and create if not exists) before frontend onchain broadcast
 router.get('/api/stories/container', getStoryContainer);
+router.put('/api/stories/:id/tip', recordStoryTip);
+
+
+// Shorts (offchain + onchain reference)
+router.get('/api/shorts', getShorts);
+router.post('/api/shorts', authenticateToken, createShort);
+router.get('/api/shorts/container', getShortsContainer);
+router.put('/api/shorts/:id/tip', recordTip);
+
 
 // AI Assistant 
 router.post("/api/ai/ask", askAI);

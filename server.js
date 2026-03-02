@@ -40,7 +40,7 @@ const io = new Server(server, {
 const port = process.env.PORT || 4000;
 
 const { watchPayments } = require("./hive/hive.js");
-const { ensureDailyContainer } = require("./hive/storyChain.js");
+const { ensureDailyContainer, ensureDailyShortsContainer } = require("./hive/storyChain.js");
 
 app.use(express.json());
 
@@ -59,6 +59,7 @@ const onlineUsers = new Set();
 
 const Message = require("./models/Message.js");
 const Story = require("./models/Story.js");
+const Short = require("./models/Short.js");
 
 io.on('connection', (socket) => {
   const { username } = socket.handshake.query;
@@ -107,23 +108,25 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Handle off-chain stories (Statuses)
   socket.on('send_story', async (data) => {
-    console.log(`📸 [Socket] Received send_story from @${username || 'unknown'}:`, data);
+    console.log(`📸 [Socket] Received send_story:`, data);
     try {
-      const { content, communityId } = data;
-      const from = username;
+      const { content, communityId, username: dataUsername } = data;
+      const from = username || dataUsername;
 
       if (!from || !content) {
         console.warn(`⚠️ [Socket] Missing story fields: from=${from}`);
         return;
       }
 
+
       // Save to MongoDB
       const storyDoc = new Story({
         username: from,
         content,
-        communityId: communityId || 'breakaway'
+        communityId: communityId || 'breakaway',
+        hiveTrxId: data.hiveTrxId || null,
+        permlink: data.permlink || null
       });
 
       const saved = await storyDoc.save();
@@ -137,6 +140,41 @@ io.on('connection', (socket) => {
       console.log(`🚀 [Socket] Broadcasted new_story to all connected users`);
     } catch (err) {
       console.error("❌ [Socket] send_story error:", err.message);
+    }
+  });
+
+  // Handle off-chain shorts (Video Shorts)
+  socket.on('send_short', async (data) => {
+    console.log(`🎬 [Socket] Received send_short:`, data);
+    try {
+      const { content, communityId, username: dataUsername } = data;
+      const from = username || dataUsername;
+
+      if (!from || !content || !content.videoUrl) {
+        console.warn(`⚠️ [Socket] Missing short fields: from=${from}`);
+        return;
+      }
+
+      // Save to MongoDB
+      const shortDoc = new Short({
+        username: from,
+        content: { ...content, type: 'video' },
+        communityId: communityId || 'breakaway',
+        hiveTrxId: data.hiveTrxId || null,
+        permlink: data.permlink || null
+      });
+
+      const saved = await shortDoc.save();
+      const plainShort = saved.toObject();
+
+      console.log(`✅ [Socket] Short saved for @${from}`);
+
+      // Broadcast to EVERYONE in the community
+      io.emit('new_short', plainShort);
+
+      console.log(`🚀 [Socket] Broadcasted new_short to all connected users`);
+    } catch (err) {
+      console.error("❌ [Socket] send_short error:", err.message);
     }
   });
 
@@ -282,8 +320,11 @@ const startServer = async () => {
       // 🗓️ Daily story container cron — runs immediately then every hour
       // Creates today's container post on Hive if it doesn't exist yet
       ensureDailyContainer().catch(err => console.error('Story container init error:', err.message));
+      ensureDailyShortsContainer().catch(err => console.error('Shorts container init error:', err.message));
+
       setInterval(() => {
         ensureDailyContainer().catch(err => console.error('Story container cron error:', err.message));
+        ensureDailyShortsContainer().catch(err => console.error('Shorts container cron error:', err.message));
       }, 60 * 60 * 1000); // every hour (safe to re-run, skips if already exists)
     });
   } catch (err) {
