@@ -14,7 +14,7 @@ const broadcastRelay = async (req, res) => {
         }
 
         // 1. Verify user session (handled by authenticateToken middleware)
-        if (req.user.username !== username) {
+        if (req.user.username.toLowerCase() !== username.toLowerCase()) {
             return res.status(403).json({ success: false, error: "Unauthorized user" });
         }
 

@@ -104,7 +104,7 @@ const keychainAuth = async (req, res) => {
 
     if (validSignature) {
       const user = await User.findOneAndUpdate(
-        { username },
+        { username: username.toLowerCase() },
         {
           $setOnInsert: {
             username,
