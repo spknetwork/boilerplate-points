@@ -48,7 +48,10 @@ const createStory = async (req, res) => {
  */
 const getStories = async (req, res) => {
     try {
-        const { communityId = 'breakaway' } = req.query;
+        let { communityId = 'breakaway', viewer } = req.query;
+        if (viewer) viewer = viewer.replace(/^@/, '');
+        console.log(`[getStories] viewer: ${viewer}, community: ${communityId}`);
+
 
         const stories = await Story.find({
             communityId,
@@ -61,7 +64,14 @@ const getStories = async (req, res) => {
             if (!userStories[story.username]) {
                 userStories[story.username] = [];
             }
-            userStories[story.username].push(story);
+
+            const storyObj = story.toObject();
+            if (viewer) {
+                storyObj.hasTipped = story.tippedBy?.includes(viewer);
+                console.log(`[getStories] Story ${story._id} hasTipped by ${viewer}: ${storyObj.hasTipped}`);
+            }
+
+            userStories[story.username].push(storyObj);
         });
 
         const grouped = Object.keys(userStories).map(username => ({
@@ -75,6 +85,48 @@ const getStories = async (req, res) => {
         return res.status(500).json({ success: false, error: 'Failed to fetch stories' });
     }
 };
+
+/**
+ * Record a tip for a story
+ */
+const recordStoryTip = async (req, res) => {
+    try {
+        const { id } = req.params;
+        let { username } = req.body;
+        if (username) username = username.replace(/^@/, '');
+        console.log(`[recordStoryTip] storyId: ${id}, username: ${username}`);
+
+
+        if (!username) {
+            return res.status(400).json({ success: false, error: 'Username is required' });
+        }
+
+        const story = await Story.findById(id);
+        if (!story) {
+            return res.status(404).json({ success: false, error: 'Story not found' });
+        }
+
+        if (!story.tippedBy) story.tippedBy = [];
+
+        // Add to tippedBy if not already there
+        if (!story.tippedBy.includes(username)) {
+
+            console.log(`[recordStoryTip] Adding ${username} to tippedBy for story ${id}`);
+            story.tippedBy.push(username);
+            story.stats.tips = (story.stats.tips || 0) + 1;
+            await story.save();
+        } else {
+            console.log(`[recordStoryTip] User ${username} already tipped story ${id}`);
+        }
+
+
+        return res.json({ success: true, hasTipped: true });
+    } catch (error) {
+        console.error('RecordStoryTip Error:', error.message);
+        return res.status(500).json({ success: false, error: 'Failed to record story tip' });
+    }
+};
+
 
 /**
  * Get onchain stories from Hive for a specific date
@@ -114,4 +166,5 @@ const getStoryContainer = async (req, res) => {
     }
 };
 
-module.exports = { createStory, getStories, getOnchainStories, getStoryContainer };
+module.exports = { createStory, getStories, getOnchainStories, getStoryContainer, recordStoryTip };
+
