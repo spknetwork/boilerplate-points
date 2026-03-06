@@ -33,6 +33,14 @@ const communityConfigSchema = new mongoose.Schema({
   communityDescriptionExtra: {
     type: String,
   },
+  sslVerificationData: {
+    type: Object,
+    default: null
+  },
+  hostnameStatus: {
+    type: String,
+    default: 'pending'
+  },
   isConfigured: {
     type: Boolean,
     default: true,

@@ -1,4 +1,5 @@
 const CommunityConfig = require("../models/CommunityConfig");
+const { registerCustomHostname } = require("../utils/cloudflare");
 
 const getConfig = async (req, res) => {
     try {
@@ -53,32 +54,42 @@ const saveConfig = async (req, res) => {
 
         let cleanedDomain = domain.toLowerCase().replace(/^(https?:\/\/)/, "").split(":")[0];
 
+        // 1. Save to DB
         let config = await CommunityConfig.findOne({ domain: cleanedDomain });
 
+        const updateData = {
+            communityName,
+            hiveCommunityId,
+            logoUrl,
+            primaryColor,
+            onboardingSats,
+            communityDescription,
+            communityDescriptionExtra,
+            isConfigured: true
+        };
+
         if (config) {
-            // Update existing
-            config.communityName = communityName;
-            config.hiveCommunityId = hiveCommunityId;
-            config.logoUrl = logoUrl;
-            config.primaryColor = primaryColor;
-            config.onboardingSats = onboardingSats;
-            config.communityDescription = communityDescription;
-            config.communityDescriptionExtra = communityDescriptionExtra;
-            await config.save();
+            Object.assign(config, updateData);
         } else {
-            // Create new
-            config = await CommunityConfig.create({
-                domain: cleanedDomain,
-                communityName,
-                hiveCommunityId,
-                logoUrl,
-                primaryColor,
-                onboardingSats,
-                communityDescription,
-                communityDescriptionExtra,
-                isConfigured: true
-            });
+            config = new CommunityConfig({ domain: cleanedDomain, ...updateData });
         }
+
+        // 2. Attempt Cloudflare Registration (Automated SSL)
+        try {
+            const cfResult = await registerCustomHostname(cleanedDomain);
+            if (cfResult && cfResult.result) {
+                config.sslVerificationData = {
+                    hostname_id: cfResult.result.id,
+                    ssl: cfResult.result.ssl,
+                    ownership_verification: cfResult.result.ownership_verification
+                };
+                config.hostnameStatus = cfResult.result.status;
+            }
+        } catch (cfError) {
+            console.warn("⚠️ Cloudflare automation failed, but config saved locally.");
+        }
+
+        await config.save();
 
         return res.status(200).json({
             success: true,
