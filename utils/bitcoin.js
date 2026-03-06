@@ -17,7 +17,7 @@ async function checkBTCMachineOwnership(address) {
     });
 
     const assets = response.data;
-    console.log(assets);
+
     // Check if any asset has a rune starting with "MACHINE" and formattedAmount is 777
     const hasBTCMachine = assets.some(asset =>
       asset.rune.startsWith('MACHINE') && asset.formattedAmount === '777'

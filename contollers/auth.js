@@ -174,7 +174,7 @@ const keychainAuth = async (req, res) => {
         existingPointsRecord.points_by_type.login.awarded_timestamps.push(currentDate);
         await existingPointsRecord.save();
       }
-      console.log("test", user._id)
+
 
       const token = JWT.sign(
         {
@@ -206,7 +206,7 @@ const keychainAuth = async (req, res) => {
     }
 
   } catch (e) {
-    console.log(e.message);
+
     return res
       .status(501)
       .json({ success: false, msg: 'Something went wrong' });
@@ -216,7 +216,7 @@ const keychainAuth = async (req, res) => {
 const keysAuth = async (req, res) => {
   try {
     const { username, key, community } = req.body;
-    console.log(username, key)
+
 
     let validSignature = false;
     let keyType;

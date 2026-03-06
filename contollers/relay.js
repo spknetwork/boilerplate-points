@@ -59,7 +59,7 @@ const broadcastRelay = async (req, res) => {
         const relayKey = PrivateKey.fromString(process.env.HIVE_RELAY_POSTING_KEY);
         const result = await client.broadcast.sendOperations(operations, relayKey);
 
-        console.log(`✅ [Relay] Broadcasted operations for @${username}, tx: ${result.id}`);
+
         return res.json({ success: true, result });
 
     } catch (error) {

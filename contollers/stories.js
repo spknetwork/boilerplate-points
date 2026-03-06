@@ -50,7 +50,7 @@ const getStories = async (req, res) => {
     try {
         let { communityId = 'breakaway', viewer } = req.query;
         if (viewer) viewer = viewer.replace(/^@/, '');
-        console.log(`[getStories] viewer: ${viewer}, community: ${communityId}`);
+
 
 
         const stories = await Story.find({
@@ -68,7 +68,7 @@ const getStories = async (req, res) => {
             const storyObj = story.toObject();
             if (viewer) {
                 storyObj.hasTipped = story.tippedBy?.includes(viewer);
-                console.log(`[getStories] Story ${story._id} hasTipped by ${viewer}: ${storyObj.hasTipped}`);
+
             }
 
             userStories[story.username].push(storyObj);
@@ -94,7 +94,7 @@ const recordStoryTip = async (req, res) => {
         const { id } = req.params;
         let { username } = req.body;
         if (username) username = username.replace(/^@/, '');
-        console.log(`[recordStoryTip] storyId: ${id}, username: ${username}`);
+
 
 
         if (!username) {
@@ -111,12 +111,12 @@ const recordStoryTip = async (req, res) => {
         // Add to tippedBy if not already there
         if (!story.tippedBy.includes(username)) {
 
-            console.log(`[recordStoryTip] Adding ${username} to tippedBy for story ${id}`);
+
             story.tippedBy.push(username);
             story.stats.tips = (story.stats.tips || 0) + 1;
             await story.save();
         } else {
-            console.log(`[recordStoryTip] User ${username} already tipped story ${id}`);
+
         }
 
 

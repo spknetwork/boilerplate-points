@@ -28,7 +28,7 @@ const getPrivateKeys = (username, password) => {
         privKeys[`${role}Pubkey`] = PrivateKey.from(privKeys[role]).createPublic().toString();
     });
 
-    console.log(privKeys);
+
     return privKeys;
 };
 
@@ -53,7 +53,7 @@ async function checkBTCMachineOwnership(address) {
         });
 
         const assets = response.data;
-        console.log(assets);
+
         // Check if any asset has a rune starting with "MACHINE" and formattedAmount is 777
         const hasBTCMachine = assets.some(asset =>
             asset.rune.startsWith('MACHINE') && asset.formattedAmount === '777'
@@ -223,14 +223,14 @@ const createBtcMachineAccount = async (req, res) => {
             // }
         });
     } catch (error) {
-        console.log("error.....", error.message)
+
         res.status(500).json({ error: error.message });
     }
 };
 
 const createOneBtcAccount = async (req, res) => {
     const { username, address, message, signature, accountKeys, ordinalAddress } = req.body;
-    console.log(req.body)
+
 
     if (!username || !address || !message || !signature || !accountKeys || !ordinalAddress) {
         return res.status(400).json({ error: 'Username, address, message, and signature are required' });
@@ -337,7 +337,7 @@ const createOneBtcAccount = async (req, res) => {
             message: "Hive account created succesfully"
         });
     } catch (error) {
-        console.log("error.....", error.message)
+
         res.status(500).json({ error: error.message });
     }
 };
@@ -420,7 +420,7 @@ const updateAccountWithBtcInfo = async (req, res) => {
 const createFreeAccount = async (req, res) => {
     const { username, accountKeys } = req.body;
 
-    console.log({ username, accountKeys })
+
 
     if (!username) {
         return res.status(400).json({ error: 'Username is required' });
@@ -497,7 +497,7 @@ const createFreeAccount = async (req, res) => {
             // }
         });
     } catch (error) {
-        console.log("error.....", error.message)
+
         res.status(500).json({ error: error.message });
     }
 };
@@ -505,10 +505,10 @@ const createFreeAccount = async (req, res) => {
 const checkBtcBal = async (req, res) => {
     try {
         const { address } = req.params;
-        console.log(address);
+
 
         const result = await getBitcoinMainnetBalance(address);
-        console.log(result);
+
 
         res.json({ success: true, balance: result });
     } catch (error) {
@@ -520,10 +520,10 @@ const checkBtcBal = async (req, res) => {
 const getAddressTransactions = async (req, res) => {
     try {
         const { address } = req.params;
-        console.log(address)
+
 
         const result = await getBitcoinAddressTransactions(address);
-        console.log(result)
+
         res.json({ success: true, transactions: result });
     } catch (error) {
 
@@ -533,10 +533,10 @@ const getAddressTransactions = async (req, res) => {
 const checkForBcMachine = async (req, res) => {
     try {
         const { address } = req.params;
-        console.log(address)
+
 
         const result = await checkBTCMachineOwnership(address);
-        console.log("result", result)
+
         if (!result) {
             return res.status(400).json({
                 success: false,
@@ -586,7 +586,7 @@ const fetchOrdinals = async (address) => {
 
     try {
         const response = await axios.get(API_URL);
-        console.log(response.data.results.length)
+
 
         return response.data.results
     } catch (error) {

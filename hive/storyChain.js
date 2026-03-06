@@ -51,7 +51,7 @@ async function ensureDailyContainer() {
     try {
         const exists = await containerExists(permlink);
         if (exists) {
-            console.log(`ℹ️ [StoryChain] Today's container already exists: ${STORY_ACCOUNT}/${permlink}`);
+
             return { author: STORY_ACCOUNT, permlink };
         }
 
@@ -73,7 +73,7 @@ async function ensureDailyContainer() {
         }];
 
         const tx = await client.broadcast.sendOperations([op], key);
-        console.log(`✅ [StoryChain] Daily container created: ${STORY_ACCOUNT}/${permlink} | tx: ${tx.id}`);
+
         return { author: STORY_ACCOUNT, permlink, trxId: tx.id };
     } catch (err) {
         console.error(`❌ [StoryChain] Failed to create daily container:`, err.message);
@@ -124,7 +124,7 @@ async function postStoryOnchain(username, postingKey, content) {
         }];
 
         const tx = await client.broadcast.sendOperations([op], key);
-        console.log(`✅ [StoryChain] Story broadcast onchain by @${username} | tx: ${tx.id}`);
+
         return { trxId: tx.id, permlink };
     } catch (err) {
         console.error(`❌ [StoryChain] onchain story failed for @${username}:`, err.message);
