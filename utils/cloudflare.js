@@ -17,7 +17,7 @@ const registerCustomHostname = async (hostname) => {
     }
 
     try {
-        console.log(`📡 [Cloudflare] Registering hostname: ${hostname}`);
+
 
         const response = await axios.post(
             `${CLOUDFLARE_API_BASE}/zones/${zoneId}/custom_hostnames`,
@@ -40,7 +40,7 @@ const registerCustomHostname = async (hostname) => {
     } catch (error) {
         // If it already exists, just try to get it
         if (error.response && error.response.status === 409) {
-            console.log(`ℹ️ [Cloudflare] Hostname ${hostname} already exists. Fetching details...`);
+
             return await getCustomHostname(hostname);
         }
 

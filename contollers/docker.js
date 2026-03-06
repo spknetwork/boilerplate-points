@@ -14,7 +14,7 @@ const dockerSetupRequest = async (req, res) => {
   } = req.body;
 
   try {
-    console.log("Request Body:", req.body);
+
 
     const existingCommunity = await Docker.findOne({ communityId });
     if (existingCommunity) {
@@ -36,13 +36,13 @@ const dockerSetupRequest = async (req, res) => {
 
     await newDocker.save();
 
-    res.status(200).json({success: true, message: 'Community registered successfully and is pending approval', communityDocker: newDocker });
+    res.status(200).json({ success: true, message: 'Community registered successfully and is pending approval', communityDocker: newDocker });
   } catch (error) {
     console.error('Error registering community:', error.message);
     if (error.code === 11000) {
-      res.status(400).json({success: false, error: 'Community with this domain already exists' });
+      res.status(400).json({ success: false, error: 'Community with this domain already exists' });
     } else {
-      res.status(500).json({success: false, error: 'Internal server error' });
+      res.status(500).json({ success: false, error: 'Internal server error' });
     }
   }
 };
@@ -64,16 +64,16 @@ const confirmDockerRequest = async (req, res) => {
     docker.dockerStatus = 'approved';
     await docker.save();
 
-    res.status(200).json({success: true, message: 'Docker setup approved successfully', communityDocker: docker });
+    res.status(200).json({ success: true, message: 'Docker setup approved successfully', communityDocker: docker });
   } catch (error) {
     console.error('Error approving Docker setup:', error.message);
-    res.status(500).json({success: false, error: 'Internal server error' });
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
 
 const cancelDockerRequest = async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const docker = await Docker.findById(id);
 
@@ -88,10 +88,10 @@ const cancelDockerRequest = async (req, res) => {
     docker.dockerStatus = 'canceled';
     await docker.save();
 
-    res.status(200).json({success: true, message: 'Docker setup canceled successfully', communityDocker: docker });
+    res.status(200).json({ success: true, message: 'Docker setup canceled successfully', communityDocker: docker });
   } catch (error) {
     console.error('Error canceling Docker setup:', error.message);
-    res.status(500).json({success: false, error: 'Internal server error' });
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
 
@@ -105,10 +105,10 @@ const deleteDockerRequest = async (req, res) => {
       return res.status(404).json({ error: 'Docker setup not found' });
     }
 
-    res.status(200).json({success: true, message: 'Docker setup deleted successfully', communityDocker: docker });
+    res.status(200).json({ success: true, message: 'Docker setup deleted successfully', communityDocker: docker });
   } catch (error) {
     console.error('Error deleting Docker setup:', error.message);
-    res.status(500).json({success: false, error: 'Internal server error' });
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
 
@@ -125,7 +125,7 @@ const getDockerSetups = async (req, res) => {
 const getSingleDockerSetup = async (req, res) => {
   const { id } = req.params;
   try {
-    const dockerSetup = await Docker.find({communityId: id});
+    const dockerSetup = await Docker.find({ communityId: id });
     res.status(200).json(dockerSetup);
   } catch (error) {
     console.error('Error fetching Docker setups:', error.message);

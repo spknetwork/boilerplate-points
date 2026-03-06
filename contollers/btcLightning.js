@@ -47,7 +47,7 @@ const createFreeLightAccount = async (req, res) => {
       message: "Request saved. Awaiting payment confirmation.",
     });
   } catch (error) {
-    console.log("error.....", error.message);
+
     res.status(500).json({ error: error.message });
   }
 };
@@ -62,7 +62,7 @@ const getAccountStatus = async (req, res) => {
 
   try {
     const account = await LightningAccount.findOne({ username });
-    console.log(account)
+
 
     if (!account) {
       return res.json({ created: false, exists: false });

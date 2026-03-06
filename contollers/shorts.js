@@ -53,7 +53,7 @@ const getShorts = async (req, res) => {
     try {
         let { communityId = 'breakaway', viewer } = req.query;
         if (viewer) viewer = viewer.replace(/^@/, '');
-        console.log(`[getShorts] viewer: ${viewer}, community: ${communityId}`);
+
 
 
         let query = { communityId };
@@ -71,7 +71,7 @@ const getShorts = async (req, res) => {
             const shortObj = short.toObject();
             if (viewer) {
                 shortObj.hasTipped = short.tippedBy?.includes(viewer);
-                console.log(`[getShorts] Short ${short._id} hasTipped by ${viewer}: ${shortObj.hasTipped}`);
+
             }
             // remove tippedBy from response for privacy/size if needed, but keeping for now
             return shortObj;
@@ -93,7 +93,7 @@ const recordTip = async (req, res) => {
         const { id } = req.params;
         let { username } = req.body;
         if (username) username = username.replace(/^@/, '');
-        console.log(`[recordTip] shortId: ${id}, username: ${username}`);
+
 
 
         if (!username) {
@@ -110,12 +110,12 @@ const recordTip = async (req, res) => {
         // Add to tippedBy if not already there
         if (!short.tippedBy.includes(username)) {
 
-            console.log(`[recordTip] Adding ${username} to tippedBy for short ${id}`);
+
             short.tippedBy.push(username);
             short.stats.tips = (short.stats.tips || 0) + 1;
             await short.save();
         } else {
-            console.log(`[recordTip] User ${username} already tipped short ${id}`);
+
         }
 
 

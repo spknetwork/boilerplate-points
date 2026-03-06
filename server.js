@@ -67,18 +67,18 @@ io.on('connection', (socket) => {
     socket.join(username);
     onlineUsers.add(username);
     io.emit('online_users', Array.from(onlineUsers));
-    console.log(`📡 User @${username} connected to socket`);
+
   }
 
   // Handle off-chain private messages
   socket.on('send_message', async (data) => {
-    console.log(`📩 [Socket] Received send_message from @${username || 'unknown'}:`, data);
+
     try {
       const { to, message, v } = data;
       const from = username;
 
       if (!from || !to || !message) {
-        console.warn(`⚠️ [Socket] Missing fields: from=${from}, to=${to}, msg=${!!message}`);
+
         return;
       }
 
@@ -96,26 +96,26 @@ io.on('connection', (socket) => {
       const plainMsg = saved.toObject();
       plainMsg.id = plainMsg.trx_id; // Add explicit id for frontend
 
-      console.log(`✅ [Socket] Message saved: ${plainMsg.id}`);
+
 
       // Broadcast to both parties
       io.to(to).emit('new_message', plainMsg);
       socket.emit('new_message', plainMsg); // Echo to sender
 
-      console.log(`🚀 [Socket] Broadcasted new_message to @${to} and @${from}`);
+
     } catch (err) {
       console.error("❌ [Socket] send_message error:", err.message);
     }
   });
 
   socket.on('send_story', async (data) => {
-    console.log(`📸 [Socket] Received send_story:`, data);
+
     try {
       const { content, communityId, username: dataUsername } = data;
       const from = username || dataUsername;
 
       if (!from || !content) {
-        console.warn(`⚠️ [Socket] Missing story fields: from=${from}`);
+
         return;
       }
 
@@ -132,12 +132,12 @@ io.on('connection', (socket) => {
       const saved = await storyDoc.save();
       const plainStory = saved.toObject();
 
-      console.log(`✅ [Socket] Story saved for @${from}`);
+
 
       // Broadcast to EVERYONE in the community
       io.emit('new_story', plainStory);
 
-      console.log(`🚀 [Socket] Broadcasted new_story to all connected users`);
+
     } catch (err) {
       console.error("❌ [Socket] send_story error:", err.message);
     }
@@ -145,13 +145,13 @@ io.on('connection', (socket) => {
 
   // Handle off-chain shorts (Video Shorts)
   socket.on('send_short', async (data) => {
-    console.log(`🎬 [Socket] Received send_short:`, data);
+
     try {
       const { content, communityId, username: dataUsername } = data;
       const from = username || dataUsername;
 
       if (!from || !content || !content.videoUrl) {
-        console.warn(`⚠️ [Socket] Missing short fields: from=${from}`);
+
         return;
       }
 
@@ -167,12 +167,12 @@ io.on('connection', (socket) => {
       const saved = await shortDoc.save();
       const plainShort = saved.toObject();
 
-      console.log(`✅ [Socket] Short saved for @${from}`);
+
 
       // Broadcast to EVERYONE in the community
       io.emit('new_short', plainShort);
 
-      console.log(`🚀 [Socket] Broadcasted new_short to all connected users`);
+
     } catch (err) {
       console.error("❌ [Socket] send_short error:", err.message);
     }
@@ -217,14 +217,14 @@ const startServer = async () => {
           ? path.join(frontendPath, 'index.html')
           : path.resolve(__dirname, frontendPath, 'index.html');
 
-        console.log(`🔍 [Meta] Request for ${domain}${req.path}`);
+
         if (process.env.DEBUG_META === 'true') {
-          console.log(`📂 [Meta] Looking for index.html at: ${indexPath}`);
+
         }
 
         if (!fs.existsSync(indexPath)) {
           if (process.env.DEBUG_META === 'true') {
-            console.warn(`⚠️ [Meta] index.html NOT FOUND at ${indexPath}`);
+
           }
           return next(); // Fall back to default static serving
         }
@@ -235,16 +235,12 @@ const startServer = async () => {
         let cleanedDomain = domain.toLowerCase().replace(/^(https?:\/\/)/, "").split(":")[0];
 
         // Debug: Log headers to see what we're getting from proxy
-        console.log(`📡 [Meta] Headers:`, {
-          host: req.headers.host,
-          'x-forwarded-host': req.headers['x-forwarded-host'],
-          hostname: req.hostname
-        });
+
 
         const config = await CommunityConfig.findOne({ domain: cleanedDomain });
 
         if (config) {
-          console.log(`✅ [Meta] Found config for ${cleanedDomain}: ${config.communityName}`);
+
           const name = config.communityName || "Breakaway Community";
           const description = config.communityDescription || "A decentralized community powered by Breakaway.";
           let logo = config.logoUrl || "/vite.svg";
@@ -262,15 +258,14 @@ const startServer = async () => {
             logo = `https://${host}/${logo}`;
           }
 
-          console.log(`🖼️ [Meta] Injected Logo URL: ${logo}`);
+
 
           html = html.replace(/{{COMMUNITY_NAME}}/g, name);
           html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, description);
           html = html.replace(/{{COMMUNITY_LOGO}}/g, logo);
 
           if (process.env.DEBUG_META === 'true') {
-            console.log(`📝 [Meta] Injected Name: ${name}`);
-            console.log(`📝 [Meta] Injected Description: ${description}`);
+
           }
         } else {
           console.warn(`⚠️ [Meta] No config found in DB for domain: "${cleanedDomain}" - using defaults`);
@@ -287,13 +282,13 @@ const startServer = async () => {
 
         // Final check: did we actually replace anything?
         if (html.includes('{{COMMUNITY_NAME}}')) {
-          console.error("❌ [Meta] Replacement FAILED! Placeholders still present in HTML.");
+
         } else {
-          console.log(`🚀 [Meta] Injection successful for ${cleanedDomain}. Sending HTML...`);
+
         }
 
         // Log the first 400 chars of the head to verify
-        console.log("📝 [Meta] HTML Head Snippet:", html.substring(html.indexOf('<head>'), html.indexOf('<head>') + 400));
+
 
         res.set('Content-Type', 'text/html');
         return res.send(html);

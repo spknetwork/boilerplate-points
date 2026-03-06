@@ -27,7 +27,7 @@ const createAccountWithKey = async (
       active: false
     };
 
-    console.log("ACCOUNT", account)
+
 
     let tokens = await client.database.getAccounts([creator_account]);
     tokens = tokens[0]?.pending_claimed_accounts;
@@ -69,11 +69,11 @@ const createAccountWithKey = async (
       const newAccount = await client.broadcast.sendOperations(ops, private_key);
       return newAccount;
     } catch (err) {
-      console.log(err.message);
+
       return err.jse_info?.name;
     }
   } catch (err) {
-    console.log(err);
+
     return err;
   }
 };
@@ -93,14 +93,14 @@ const createAccountKeys = async (username) => {
 
     return accountInfo;
   } catch (err) {
-    console.log(err)
+
   }
 };
 
 const getCommunity = (name, observer = "") => {
   return bridgeApiCall("get_community", { name, observer })
     .then(result => {
-      console.log(result)
+
       return result;
     })
     .catch(error => {
@@ -119,7 +119,7 @@ const createHiveAccount = async (username) => {
     // 1. Check if account ALREADY exists on-chain to avoid unnecessary broadcast
     const [onChainAcc] = await client.database.getAccounts([username]);
     if (onChainAcc) {
-      console.log(`ℹ️ Account @${username} already exists on blockchain. Marking as created.`);
+
       existingUser.status = "account_created";
       await existingUser.save();
       return { success: true, alreadyExists: true };
@@ -199,7 +199,7 @@ async function watchPayments(paymentAccount, io) {
         { upsert: true, new: true }
       );
 
-      console.log(`✉️ Indexed message from @${from} to @${to}`);
+
 
       // Emit real-time notification via Socket.io
       if (io) {
@@ -212,7 +212,7 @@ async function watchPayments(paymentAccount, io) {
   };
 
   const reconcileHistory = async () => {
-    console.log(`[Reconciler] Scanning history...`);
+
     for (const target of targets) {
       try {
         const history = await client.call('condenser_api', 'get_account_history', [target, -1, 15]);
@@ -234,7 +234,7 @@ async function watchPayments(paymentAccount, io) {
 
               if (user) {
                 if (user.status === "pending") {
-                  console.log(`🎯 [HISTORY] Detected NEW payment! @${from} -> @${to} for @${user.username}`);
+
                   user.status = "paid";
                   user.satsPaid = Number(amount.split(" ")[0]);
                   user.paidAt = new Date();
@@ -242,7 +242,7 @@ async function watchPayments(paymentAccount, io) {
                 }
 
                 try {
-                  console.log(`⚡ [Reconciler] Attempting fulfillment for @${user.username}...`);
+
                   await createHiveAccount(user.username);
                 } catch (err) {
                   console.error(`❌ [Reconciler] Fulfillment error for @${user.username}:`, err.message);
@@ -264,7 +264,7 @@ async function watchPayments(paymentAccount, io) {
 
   const startLiveStream = async () => {
     try {
-      console.log(`📡 Opening live head-block stream...`);
+
       const stream = client.blockchain.getOperationsStream({ mode: 0 });
 
       for await (const op of stream) {
@@ -279,7 +279,7 @@ async function watchPayments(paymentAccount, io) {
 
             if (user) {
               if (user.status === "pending") {
-                console.log(`🔍 [${op.block_num}] Live Match: @${from} -> @${to} (${amount})`);
+
                 user.status = "paid";
                 user.satsPaid = Number(amount.split(" ")[0]);
                 user.paidAt = new Date();
@@ -287,7 +287,7 @@ async function watchPayments(paymentAccount, io) {
               }
 
               try {
-                console.log(`⚡ [Live] Attempting fulfillment for @${user.username}...`);
+
                 await createHiveAccount(user.username);
               } catch (err) {
                 console.error(`❌ [Live] Fulfillment failed for @${user.username}:`, err.message);

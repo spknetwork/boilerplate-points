@@ -121,10 +121,10 @@ const updateUserPoints = async (req, res) => {
 const getUserPoints = async (req, res) => {
   try {
     const { username, community } = req.query;
-    console.log(username, community)
+
 
     const user = await User.findOne({ username });
-    console.log(user)
+
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -135,7 +135,7 @@ const getUserPoints = async (req, res) => {
       communityName: community,
     });
 
-    if(userPoints.length === 0) {
+    if (userPoints.length === 0) {
       return res.status(404).json({ error: 'Community not found for this user' });
     }
 
@@ -228,9 +228,9 @@ const getUserPointsByCommunity = async (req, res) => {
 };
 
 module.exports = {
-    updateUserPoints,
-    getUserPoints,
-    getAllUsersPoints,
-    claimPoints,
-    getUserPointsByCommunity
+  updateUserPoints,
+  getUserPoints,
+  getAllUsersPoints,
+  claimPoints,
+  getUserPointsByCommunity
 };
