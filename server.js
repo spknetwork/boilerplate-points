@@ -18,20 +18,14 @@ app.set('trust proxy', true); // Trust headers from Nginx (Cloudflare, etc.)
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: (origin, callback) => {
-      const allowedOrigins = [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'https://conf.breakaway.community',
-        'https://breakaway.community',
-        'https://breakaway-communities.netlify.app'
-      ];
-      if (!origin || allowedOrigins.includes(origin) || origin.includes('netlify.app')) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Still allow during debugging, but explicitly calling true
-      }
-    },
+    origin: [
+      'https://conf.breakaway.community',
+      'https://breakaway.community',
+      'https://sovraniche.com',
+      'https://beta.sovraniche.com',
+      /\.breakaway\.community$/,
+      /\.sovraniche\.com$/
+    ],
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     credentials: true
   },
@@ -243,7 +237,7 @@ const startServer = async () => {
 
           const name = config.communityName || "Breakaway Community";
           const description = config.communityDescription || "A decentralized community powered by Breakaway.";
-          let logo = config.logoUrl || "/vite.svg";
+          let logo = config.logoUrl || "/sovraniche-logo.png";
 
           // Robust domain detection
           const host = req.headers['x-forwarded-host'] || req.headers.host || domain;
@@ -276,7 +270,7 @@ const startServer = async () => {
           html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, defaultDesc);
 
           const host = req.headers['x-forwarded-host'] || req.headers.host || domain;
-          const fallbackLogo = `https://${host}/vite.svg`;
+          const fallbackLogo = `https://${host}/sovraniche-logo.png`;
           html = html.replace(/{{COMMUNITY_LOGO}}/g, fallbackLogo);
         }
 
