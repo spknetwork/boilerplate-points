@@ -18,14 +18,28 @@ app.set('trust proxy', true); // Trust headers from Nginx (Cloudflare, etc.)
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: [
-      'https://conf.breakaway.community',
-      'https://breakaway.community',
-      'https://sovraniche.com',
-      'https://beta.sovraniche.com',
-      /\.breakaway\.community$/,
-      /\.sovraniche\.com$/
-    ],
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://conf.breakaway.community',
+        'https://breakaway.community',
+        'https://sovraniche.com',
+        'https://beta.sovraniche.com',
+        'https://breakaway-communities.netlify.app'
+      ];
+      // Allow if in list, or a subdomain of our brands, or if it's a dynamic community (lhive.site etc)
+      if (!origin ||
+        allowedOrigins.includes(origin) ||
+        origin.includes('sovraniche.com') ||
+        origin.includes('breakaway.community') ||
+        origin.includes('netlify.app')) {
+        callback(null, true);
+      } else {
+        // Still allow for dynamic communities like lhive.site to keep it zero-config
+        callback(null, true);
+      }
+    },
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     credentials: true
   },
