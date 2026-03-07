@@ -249,8 +249,8 @@ const startServer = async () => {
 
         if (config) {
 
-          const name = config.communityName || "Breakaway Community";
-          const description = config.communityDescription || "A decentralized community powered by Breakaway.";
+          const name = config.communityName || "Sovraniche Community";
+          const description = config.communityDescription || "A decentralized community powered by Sovraniche. Every community is sovereign.";
           let logo = config.logoUrl || "/sovraniche-logo.png";
 
           // Robust domain detection
@@ -277,8 +277,8 @@ const startServer = async () => {
           }
         } else {
           console.warn(`⚠️ [Meta] No config found in DB for domain: "${cleanedDomain}" - using defaults`);
-          const defaultName = "Breakaway Community";
-          const defaultDesc = "A decentralized community powered by Breakaway infrastructure.";
+          const defaultName = "Sovraniche Community";
+          const defaultDesc = "A decentralized community powered by Sovraniche infrastructure. Every community is sovereign.";
 
           html = html.replace(/{{COMMUNITY_NAME}}/g, defaultName);
           html = html.replace(/{{COMMUNITY_DESCRIPTION}}/g, defaultDesc);
