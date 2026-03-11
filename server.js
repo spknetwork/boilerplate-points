@@ -45,6 +45,8 @@ const io = new Server(server, {
   },
   allowEIO3: true
 });
+
+app.set('socketio', io);
 const port = process.env.PORT || 4000;
 
 const { watchPayments } = require("./hive/hive.js");
@@ -69,14 +71,23 @@ const Message = require("./models/Message.js");
 const Story = require("./models/Story.js");
 const Short = require("./models/Short.js");
 
+const { registerAddressMapping } = require('./contollers/webhook');
+
 io.on('connection', (socket) => {
   const { username } = socket.handshake.query;
   if (username) {
     socket.join(username);
     onlineUsers.add(username);
     io.emit('online_users', Array.from(onlineUsers));
-
   }
+
+  // Decentralized Address Registration: 
+  // Map addresses to username in-memory for webhook notifications
+  socket.on('register_web3_addresses', (addresses) => {
+    if (username && addresses) {
+      registerAddressMapping(username, addresses);
+    }
+  });
 
   // Handle off-chain private messages
   socket.on('send_message', async (data) => {
@@ -199,6 +210,10 @@ io.on('connection', (socket) => {
 const startServer = async () => {
   try {
     await connectDb();
+
+    // Webhook Routes
+    const webhookRoutes = require('./routes/webhookRoutes');
+    app.use('/api/webhooks', webhookRoutes);
 
     app.use('/', routes);
 
