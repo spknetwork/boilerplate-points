@@ -1,4 +1,5 @@
-const Point = require('../models/Point');
+const UserPoints = require('../models/UserPoints');
+const PointLedger = require('../models/PointLedger');
 const User = require('../models/User');
 const BitcoinMachines = require("../models/BitcoinMachines")
 const { getAccount, createAccountWithKey, createAccountKeys } = require("../hive/hive");
@@ -34,43 +35,26 @@ const createUser = async (req, res) => {
       await user.save();
     }
 
-    const existingPointsRecord = await Point.findOne({ user: user._id, communityName: community });
+    const existingPointsRecord = await UserPoints.findOne({ username, communityId: community });
 
     if (!existingPointsRecord) {
-      const pointsRecord = new Point({
-        user: user._id,
-        communityName: community,
-        pointsBalance: 0,
-        symbol: "",
-        unclaimedPoints: 10,
-        points_by_type: {
-          posts: 0,
-          comments: 0,
-          upvote: 0,
-          reblog: 0,
-          login: 0,
-          delegation: 0,
-          community: 0,
-          checking: 0,
-        },
-        pending_points: {
-          posts: 0,
-          comments: 0,
-          upvote: 0,
-          reblog: 0,
-          login: 0,
-          delegation: 0,
-          community: 0,
-          checking: 0,
-        },
+      await UserPoints.create({
+        username,
+        communityId: community,
+        unclaimedPoints: 10
       });
-
-      await pointsRecord.save();
     } else {
-      existingPointsRecord.points_by_type.login += 10;
       existingPointsRecord.unclaimedPoints += 10;
       await existingPointsRecord.save();
     }
+
+    // Log the award
+    await PointLedger.create({
+      username,
+      communityId: community,
+      actionType: 'login', // Initial join points treated as login
+      points: 10
+    });
 
     res.status(200).json({
       message: 'User created successfully',
@@ -126,46 +110,28 @@ const createHiveAccount = async (req, res) => {
         await user.save();
       }
 
-      const existingPointsRecord = await Point.findOne({
-        user: user._id,
-        communityName: community,
+      const existingPointsRecord = await UserPoints.findOne({
+        username,
+        communityId: community,
       });
 
       if (!existingPointsRecord) {
-        const pointsRecord = new Point({
-          user: user._id,
-          communityName: community,
-          pointsBalance: 0,
-          symbol: "",
-          unclaimedPoints: 10,
-          points_by_type: {
-            posts: 0,
-            comments: 0,
-            upvote: 0,
-            reblog: 0,
-            login: 10,
-            delegation: 0,
-            community: 0,
-            checking: 0,
-          },
-          pending_points: {
-            posts: 0,
-            comments: 0,
-            upvote: 0,
-            reblog: 0,
-            login: 0,
-            delegation: 0,
-            community: 0,
-            checking: 0,
-          },
+        await UserPoints.create({
+          username,
+          communityId: community,
+          unclaimedPoints: 10
         });
-
-        await pointsRecord.save();
       } else {
-        existingPointsRecord.points_by_type.login += 10; // login points
         existingPointsRecord.unclaimedPoints += 10;
         await existingPointsRecord.save();
       }
+
+      await PointLedger.create({
+        username,
+        communityId: community,
+        actionType: 'login',
+        points: 10
+      });
       //send onboard email to user
       sendEmail(username, referral, email)
 
@@ -216,35 +182,28 @@ const createHiveAccountKc = async (req, res) => {
 
     const currentDate = Date.now();
 
-    const existingPointsRecord = await Point.findOne({
-      user: user._id,
-      communityName: community,
+    const existingPointsRecord = await UserPoints.findOne({
+      username,
+      communityId: community,
     });
 
     if (!existingPointsRecord) {
-      const pointsRecord = new Point({
-        user: user._id,
-        communityName: community,
-        pointsBalance: 0,
-        symbol: "",
-        unclaimedPoints: 10,
-        points_by_type: {
-          posts: { points: 0, awarded_timestamps: [] },
-          comments: { points: 0, awarded_timestamps: [] },
-          upvote: { points: 0, awarded_timestamps: [] },
-          reblog: { points: 0, awarded_timestamps: [] },
-          login: { points: 10, awarded_timestamps: [currentDate] },
-          delegation: { points: 0, awarded_timestamps: [] },
-          community: { points: 0, awarded_timestamps: [] },
-          checking: { points: 0, awarded_timestamps: [] },
-        }
+      await UserPoints.create({
+        username,
+        communityId: community,
+        unclaimedPoints: 10
       });
-      await pointsRecord.save();
     } else {
-      existingPointsRecord.points_by_type.login.points += 10;
       existingPointsRecord.unclaimedPoints += 10;
       await existingPointsRecord.save();
     }
+
+    await PointLedger.create({
+      username,
+      communityId: community,
+      actionType: 'login',
+      points: 10
+    });
     //send onboard email to user
     sendEmail(username, referral, email)
 

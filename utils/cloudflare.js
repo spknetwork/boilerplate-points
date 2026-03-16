@@ -35,8 +35,24 @@ const registerCustomHostname = async (hostname) => {
                 }
             }
         );
+        let cfResult = response.data;
 
-        return response.data;
+        // Polling loop: If SSL is 'initializing' and missing txt_name, wait up to 10 seconds for Cloudflare to generate it
+        if (cfResult && cfResult.result && cfResult.result.ssl && !cfResult.result.ssl.txt_name) {
+            let retries = 0;
+            const maxRetries = 10;
+            while (retries < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                retries++;
+                const checkStatus = await getCustomHostname(hostname);
+                if (checkStatus && checkStatus.result && checkStatus.result.ssl && checkStatus.result.ssl.txt_name) {
+                    cfResult = checkStatus;
+                    break;
+                }
+            }
+        }
+
+        return cfResult;
     } catch (error) {
         // If it already exists, just try to get it
         if (error.response && error.response.status === 409) {
@@ -68,7 +84,32 @@ const getCustomHostname = async (hostname) => {
         );
 
         if (response.data.result && response.data.result.length > 0) {
-            return { success: true, result: response.data.result[0] };
+            let cfResult = { success: true, result: response.data.result[0] };
+
+            // Polling loop: If fetching an existing hostname that is still generating its SSL TXT
+            if (cfResult && cfResult.result && cfResult.result.ssl && !cfResult.result.ssl.txt_name) {
+                let retries = 0;
+                const maxRetries = 10;
+                while (retries < maxRetries) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    retries++;
+                    const checkStatus = await axios.get(
+                        `${CLOUDFLARE_API_BASE}/zones/${zoneId}/custom_hostnames?hostname=${hostname}`,
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${apiToken}`,
+                                'Content-Type': 'application/json'
+                            }
+                        }
+                    );
+                    if (checkStatus.data.result && checkStatus.data.result.length > 0 && checkStatus.data.result[0].ssl && checkStatus.data.result[0].ssl.txt_name) {
+                        cfResult = { success: true, result: checkStatus.data.result[0] };
+                        break;
+                    }
+                }
+            }
+
+            return cfResult;
         }
         return null;
     } catch (error) {

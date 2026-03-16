@@ -1,26 +1,27 @@
 const { differenceInMinutes } = require('date-fns');
 const JWT = require('jsonwebtoken');
-const { cryptoUtils, Signature, PrivateKey, PublicKey } = require('@hiveio/dhive');
+const { cryptoUtils, Signature, PrivateKey } = require('@hiveio/dhive');
 const { getAccounts } = require('../hive/hive');
-const client = require("../hive/client")
-const Point = require('../models/Point');
-const PointsHistory = require('../models/PointsHistory');
+const client = require("../hive/client");
 const User = require('../models/User');
 
 const keychainAuth = async (req, res) => {
   try {
-    const { username, ts, sig, community, message } = req.query;
-    let response;
+    const { username, ts, sig, message } = req.query;
 
     if (process.env.NODE_ENV === 'production') {
-      const timeDifference = differenceInMinutes(Date.now(), ts);
+      const timeDifference = differenceInMinutes(Date.now(), Number(ts));
       if (timeDifference >= 3) {
-        return res.status(409).send(
-          'Invalid timestamp. Please check that your system clock is correctly set.'
-        );
+        return res.status(409).json({
+          error: 'Invalid timestamp. Please check that your system clock is correctly set.'
+        });
       }
     }
+
     const [account] = await getAccounts([username]);
+    if (!account) {
+      return res.status(404).json({ success: false, msg: 'Account not found on Hive' });
+    }
 
     let validSignature = false;
 
@@ -35,18 +36,13 @@ const keychainAuth = async (req, res) => {
     const thresholdPosting = account.posting.weight_threshold;
     const thresholdActive = account.active.weight_threshold;
 
-    const authorizedAccountsPosting = new Map(
-      account.posting.account_auths
-    );
-    const authorizedAccountsActive = new Map(
-      account.active.account_auths
-    );
+    const authorizedAccountsPosting = new Map(account.posting.account_auths);
+    const authorizedAccountsActive = new Map(account.active.account_auths);
 
     // Trying to validate using posting key
     if (!validSignature) {
       for (let i = 0; i < account.posting.key_auths.length; i += 1) {
         const auth = account.posting.key_auths[i];
-
         if (auth[0] === publicKey && auth[1] >= thresholdPosting) {
           validSignature = true;
           break;
@@ -58,7 +54,6 @@ const keychainAuth = async (req, res) => {
     if (!validSignature) {
       for (let i = 0; i < account.active.key_auths.length; i += 1) {
         const auth = account.active.key_auths[i];
-
         if (auth[0] === publicKey && auth[1] >= thresholdActive) {
           validSignature = true;
           break;
@@ -68,16 +63,14 @@ const keychainAuth = async (req, res) => {
 
     // Trying to validate using posting authority
     if (!validSignature && authorizedAccountsPosting.size > 0) {
-      let accountsData = await hiveClient.database.getAccounts(
+      let accountsData = await client.database.getAccounts(
         Array.from(authorizedAccountsPosting.keys())
       );
-
       accountsData = accountsData.map((a) => a.posting.key_auths[0]);
 
       for (let i = 0; i < accountsData.length; i += 1) {
         const auth = accountsData[i];
-
-        if (auth[0] === publicKey && auth[1] >= thresholdPosting) {
+        if (auth && auth[0] === publicKey && auth[1] >= thresholdPosting) {
           validSignature = true;
           break;
         }
@@ -86,16 +79,14 @@ const keychainAuth = async (req, res) => {
 
     // Trying to validate using active authority
     if (!validSignature && authorizedAccountsActive.size > 0) {
-      let accountsData = await hiveClient.database.getAccounts(
+      let accountsData = await client.database.getAccounts(
         Array.from(authorizedAccountsActive.keys())
       );
-
       accountsData = accountsData.map((a) => a.active.key_auths[0]);
 
       for (let i = 0; i < accountsData.length; i += 1) {
         const auth = accountsData[i];
-
-        if (auth[0] === publicKey && auth[1] >= thresholdActive) {
+        if (auth && auth[0] === publicKey && auth[1] >= thresholdActive) {
           validSignature = true;
           break;
         }
@@ -105,128 +96,54 @@ const keychainAuth = async (req, res) => {
     if (validSignature) {
       const user = await User.findOneAndUpdate(
         { username: username.toLowerCase() },
-        {
-          $setOnInsert: {
-            username,
-          },
-        },
+        { $setOnInsert: { username } },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
 
-      const currentDate = Date.now();
-
-      const existingPointsRecord = await Point.findOne({
-        user: user._id,
-        communityName: community,
-      });
-
-      if (!existingPointsRecord) {
-        const pointsRecord = new Point({
-          user: user._id,
-          communityName: community,
-          pointsBalance: 0,
-          symbol: '',
-          unclaimedPoints: 10,
-          points_by_type: {
-            posts: { points: 0, awarded_timestamps: [] },
-            comments: { points: 0, awarded_timestamps: [] },
-            upvote: { points: 0, awarded_timestamps: [] },
-            reblog: { points: 0, awarded_timestamps: [] },
-            login: { points: 10, awarded_timestamps: [currentDate] },
-            delegation: { points: 0, awarded_timestamps: [] },
-            community: { points: 0, awarded_timestamps: [] },
-            checking: { points: 0, awarded_timestamps: [] },
-          },
-        });
-
-        await pointsRecord.save();
-      } else {
-        if (
-          existingPointsRecord.points_by_type.login.awarded_timestamps.filter(
-            (timestamp) => currentDate - timestamp <= 86400000
-          ).length >= 2
-        ) {
-          const token = JWT.sign(
-            {
-              username: username,
-              userId: user._id,
-            },
-            process.env.JWT_SECRET,
-            {
-              expiresIn: '12000h', //test
-            }
-          );
-
-          response = {
-            ...user,
-            token,
-          };
-
-          return res.status(200).json({
-            success: true,
-            response,
-            message: 'Login points already awarded twice today.',
-          });
-        }
-
-        existingPointsRecord.points_by_type.login.points += 10;
-        existingPointsRecord.unclaimedPoints += 10;
-        existingPointsRecord.points_by_type.login.awarded_timestamps.push(currentDate);
-        await existingPointsRecord.save();
-      }
-
-
+      // Issue a long-lived JWT token to ensure relay/session stability
       const token = JWT.sign(
         {
-          username: username,
+          username: username.toLowerCase(),
           userId: user._id,
         },
         process.env.JWT_SECRET,
         {
-          expiresIn: '12000h', //test
+          expiresIn: '12000h',
         }
       );
 
-      response = {
-        ...user,
-        token,
-      };
-
-      await PointsHistory.create({
-        user: user._id,
-        community,
-        operationType: "login",
-        pointsEarned: 10,
-      });
-
       return res.status(200).json({
         success: true,
-        response,
+        response: {
+          ...user.toObject(),
+          token,
+        },
       });
     }
 
-  } catch (e) {
+    return res.status(401).json({ success: false, msg: 'Invalid signature' });
 
-    return res
-      .status(501)
-      .json({ success: false, msg: 'Something went wrong' });
+  } catch (e) {
+    console.error('Keychain Auth Error:', e.message);
+    return res.status(501).json({ success: false, msg: 'Something went wrong' });
   }
 };
 
 const keysAuth = async (req, res) => {
   try {
-    const { username, key, community } = req.body;
-
-
+    const { username, key } = req.body;
     let validSignature = false;
-    let keyType;
     const wif = PrivateKey.fromString(key);
     const publicKey = wif.createPublic().toString();
     const accounts = await client.database.getAccounts([username]);
     const account = accounts[0];
 
-    const thresholdPosting = account?.posting.weight_threshold;
-    const thresholdActive = account?.active.weight_threshold;
+    if (!account) {
+      return res.status(404).json({ success: false, msg: 'Account not found on Hive' });
+    }
+
+    const thresholdPosting = account.posting.weight_threshold;
+    const thresholdActive = account.active.weight_threshold;
 
     const authorizedAccountsPosting = new Map(account.posting.account_auths);
     const authorizedAccountsActive = new Map(account.active.account_auths);
@@ -235,10 +152,8 @@ const keysAuth = async (req, res) => {
     if (!validSignature) {
       for (let i = 0; i < account.posting.key_auths.length; i += 1) {
         const auth = account.posting.key_auths[i];
-
         if (auth[0] === publicKey && auth[1] >= thresholdPosting) {
           validSignature = true;
-          keyType = 'posting';
           break;
         }
       }
@@ -248,9 +163,7 @@ const keysAuth = async (req, res) => {
     if (!validSignature) {
       for (let i = 0; i < account.active.key_auths.length; i += 1) {
         const auth = account.active.key_auths[i];
-
         if (auth[0] === publicKey && auth[1] >= thresholdActive) {
-          keyType = 'active';
           validSignature = true;
           break;
         }
@@ -259,17 +172,14 @@ const keysAuth = async (req, res) => {
 
     // Trying to validate using posting authority
     if (!validSignature && authorizedAccountsPosting.size > 0) {
-      let accountsData = await hiveClient.database.getAccounts(
-        Array.from(authorizedAccountsPosting.keys()),
+      let accountsData = await client.database.getAccounts(
+        Array.from(authorizedAccountsPosting.keys())
       );
-
       accountsData = accountsData.map((a) => a.posting.key_auths[0]);
 
       for (let i = 0; i < accountsData.length; i += 1) {
         const auth = accountsData[i];
-
-        if (auth[0] === publicKey && auth[1] >= thresholdPosting) {
-          keyType = 'posting';
+        if (auth && auth[0] === publicKey && auth[1] >= thresholdPosting) {
           validSignature = true;
           break;
         }
@@ -278,17 +188,14 @@ const keysAuth = async (req, res) => {
 
     // Trying to validate using active authority
     if (!validSignature && authorizedAccountsActive.size > 0) {
-      let accountsData = await hiveClient.database.getAccounts(
-        Array.from(authorizedAccountsActive.keys()),
+      let accountsData = await client.database.getAccounts(
+        Array.from(authorizedAccountsActive.keys())
       );
-
       accountsData = accountsData.map((a) => a.active.key_auths[0]);
 
       for (let i = 0; i < accountsData.length; i += 1) {
         const auth = accountsData[i];
-
-        if (auth[0] === publicKey && auth[1] >= thresholdActive) {
-          keyType = 'active';
+        if (auth && auth[0] === publicKey && auth[1] >= thresholdActive) {
           validSignature = true;
           break;
         }
@@ -297,111 +204,37 @@ const keysAuth = async (req, res) => {
 
     if (validSignature) {
       const user = await User.findOneAndUpdate(
-        { username },
-        {
-          $setOnInsert: {
-            username,
-          },
-        },
+        { username: username.toLowerCase() },
+        { $setOnInsert: { username } },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
 
-      const currentDate = Date.now();
-
-      const existingPointsRecord = await Point.findOne({
-        user: user._id,
-        communityName: community,
-      });
-
-      if (!existingPointsRecord) {
-        const pointsRecord = new Point({
-          user: user._id,
-          communityName: community,
-          pointsBalance: 0,
-          symbol: '',
-          unclaimedPoints: 10,
-          points_by_type: {
-            posts: { points: 0, awarded_timestamps: [] },
-            comments: { points: 0, awarded_timestamps: [] },
-            upvote: { points: 0, awarded_timestamps: [] },
-            reblog: { points: 0, awarded_timestamps: [] },
-            login: { points: 10, awarded_timestamps: [currentDate] },
-            delegation: { points: 0, awarded_timestamps: [] },
-            community: { points: 0, awarded_timestamps: [] },
-            checking: { points: 0, awarded_timestamps: [] },
-          },
-        });
-
-        await pointsRecord.save();
-      } else {
-        if (
-          existingPointsRecord.points_by_type.login.awarded_timestamps.filter(
-            (timestamp) => currentDate - timestamp <= 86400000
-          ).length >= 2
-        ) {
-          const token = JWT.sign(
-            {
-              username: username,
-              userId: user._id,
-            },
-            process.env.JWT_SECRET,
-            {
-              expiresIn: '12h',
-            }
-          );
-
-          response = {
-            ...user,
-            token,
-          };
-
-          await PointsHistory.create({
-            user: user._id,
-            community,
-            operationType: "login",
-            pointsEarned: 10,
-          });
-
-          return res.status(200).json({
-            success: true,
-            response,
-            message: 'Login points already awarded twice today.',
-          });
-        }
-
-        existingPointsRecord.points_by_type.login.points += 10;
-        existingPointsRecord.unclaimedPoints += 10;
-        existingPointsRecord.points_by_type.login.awarded_timestamps.push(currentDate);
-        await existingPointsRecord.save();
-      }
-
+      // Issue a long-lived JWT token to ensure relay/session stability
       const token = JWT.sign(
         {
-          username: username,
+          username: username.toLowerCase(),
           userId: user._id,
         },
         process.env.JWT_SECRET,
         {
-          expiresIn: '12h',
+          expiresIn: '12000h',
         }
       );
 
-      response = {
-        ...user,
-        token,
-      };
-
       return res.status(200).json({
         success: true,
-        response,
+        response: {
+          ...user.toObject(),
+          token,
+        },
       });
     }
 
+    return res.status(401).json({ success: false, msg: 'Invalid key' });
+
   } catch (err) {
-    console.error(err.message);
-    return res
-      .status(501)
-      .json({ success: false, msg: 'Something went wrong' });
+    console.error('Keys Auth Error:', err.message);
+    return res.status(501).json({ success: false, msg: 'Something went wrong' });
   }
 };
 

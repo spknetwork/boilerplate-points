@@ -1,14 +1,5 @@
 const express = require('express');
 const { createUser, createHiveAccount, getAllUsers, getAllBtcUsers, createHiveAccountKc, getUserByUsername, syncAddresses } = require('../contollers/users');
-const { transferPoints, getTransactionHistory, getCommunityTransactions } = require('../contollers/transactions');
-const {
-    updateUserPoints,
-    getUserPoints,
-    getAllUsersPoints,
-    claimPoints,
-    getUserPointsByCommunity
-} = require('../contollers/points');
-const { getPointsHistory } = require('../contollers/pointsHistory');
 const { keychainAuth, keysAuth } = require('../contollers/auth');
 const { registerCommunity } = require('../contollers/communities');
 const { loginUser, registerUser, checkSolBalance } = require('../contollers/offchainUsers');
@@ -59,20 +50,17 @@ router.put('/platform-setup/cancel/:id', verifyAdmin, cancelDockerRequest);
 router.delete('/platform-setup/delete/:id', verifyAdmin, deleteDockerRequest);
 
 //Points Route
-router.post('/points', authenticateToken, updateUserPoints);
-router.post('/points/claim', authenticateToken, claimPoints);
-router.get('/points', getUserPoints);
-router.get('/points/:all', getAllUsersPoints);
-router.get('/community/:id', getUserPointsByCommunity);
+const { awardPoints, getBalance, getLedger, claimPoints, transferPoints } = require('../contollers/newPoints');
+router.post('/api/v1/points/award', authenticateToken, awardPoints);
+router.post('/api/v1/points/claim', authenticateToken, claimPoints);
+router.get('/api/v1/points/balance/:username/:communityId', getBalance);
+router.get('/api/v1/points/ledger/:username/:communityId', getLedger);
 
 //Transaction Routes
-router.post('/transactions/transfer', transferPoints);
-//need checking again
-router.get('/transactions/history', getTransactionHistory);
-router.get('/transactions/:community', getCommunityTransactions);
-
-//needs checking again
-router.get('/points-history/:username/:community', getPointsHistory);
+router.post('/transactions/transfer', authenticateToken, transferPoints);
+// Legacy routes below were removed as they are unused or replaced by api/v1/points/ledger
+// router.get('/transactions/history', getTransactionHistory);
+// router.get('/transactions/:community', getCommunityTransactions);
 
 //community setup
 router.post('/clone-repo', cloneRepository);

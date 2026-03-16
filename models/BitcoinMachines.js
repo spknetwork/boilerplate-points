@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const PointSchema = require("./Point");
 
 const BitcoinMachinesSchema = new mongoose.Schema({
   username: {
@@ -25,11 +24,11 @@ const BitcoinMachinesSchema = new mongoose.Schema({
     default: false,
   }
 },
-{
-  timestamps: { 
-    createdAt: "created_at",
-    updatedAt: "updated_at",
-  },
-}); 
+  {
+    timestamps: {
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    },
+  });
 
 module.exports = mongoose.model("BtcMachines", BitcoinMachinesSchema);

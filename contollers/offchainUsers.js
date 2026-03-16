@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const PointsHistory = require("../models/PointsHistory");
-const Point = require("../models/Point");
+const UserPoints = require("../models/UserPoints");
+const PointLedger = require("../models/PointLedger");
 const offchainUser = require("../models/offchainUser");
 
 const solanaWeb3 = require('@solana/web3.js');
@@ -91,55 +91,42 @@ const loginUser = async (req, res) => {
       { expiresIn: "12h" }
     );
 
-    const currentDate = Date.now();
-    const existingPointsRecord = await Point.findOne({
-      user: user._id,
-      communityName: "solanna",
+    const existingPointsRecord = await UserPoints.findOne({
+      username: user.username || email, // Fallback if username is unset
+      communityId: "solanna",
     });
 
     if (!existingPointsRecord) {
-      const pointsRecord = new Point({
-        user: user._id,
-        communityName: "solanna",
-        pointsBalance: 0,
-        symbol: "",
-        unclaimedPoints: 10,
-        points_by_type: {
-          posts: { points: 0, awarded_timestamps: [] },
-          comments: { points: 0, awarded_timestamps: [] },
-          upvote: { points: 0, awarded_timestamps: [] },
-          reblog: { points: 0, awarded_timestamps: [] },
-          login: { points: 10, awarded_timestamps: [currentDate] },
-          delegation: { points: 0, awarded_timestamps: [] },
-          community: { points: 0, awarded_timestamps: [] },
-          checking: { points: 0, awarded_timestamps: [] },
-        },
+      await UserPoints.create({
+        username: user.username || email,
+        communityId: "solanna",
+        unclaimedPoints: 10
+      });
+    } else {
+      // Check for rate limit: max 2 logins per 24h
+      const todayTotal = await PointLedger.countDocuments({
+        username: user.username || email,
+        communityId: "solanna",
+        actionType: "login",
+        createdAt: { $gte: new Date(Date.now() - 86400000) }
       });
 
-      await pointsRecord.save();
-    } else {
-      if (
-        existingPointsRecord.points_by_type.login.awarded_timestamps.filter(
-          (timestamp) => currentDate - timestamp <= 86400000
-        ).length >= 2
-      ) {
+      if (todayTotal < 2) {
+        existingPointsRecord.unclaimedPoints += 10;
+        await existingPointsRecord.save();
+      } else {
         return res.status(200).json({
           message: "Login points already awarded twice today.",
           token,
         });
       }
-
-      existingPointsRecord.points_by_type.login.points += 10;
-      existingPointsRecord.unclaimedPoints += 10;
-      existingPointsRecord.points_by_type.login.awarded_timestamps.push(currentDate);
-      await existingPointsRecord.save();
     }
 
-    await PointsHistory.create({
-      user: user._id,
-      community: "solanna",
-      operationType: "login",
-      pointsEarned: 10,
+    await PointLedger.create({
+      username: user.username || email,
+      communityId: "solanna",
+      actionType: "login",
+      points: 10,
     });
 
     res.status(200).json({
