@@ -15,6 +15,7 @@ const { broadcastRelay } = require('../contollers/relay');
 const { getMessages, editMessage, saveMessage } = require('../contollers/messages');
 const { createStory, getStories, getOnchainStories, getStoryContainer, recordStoryTip } = require('../contollers/stories');
 const { createShort, getShorts, getShortsContainer, recordTip } = require('../contollers/shorts');
+const p2pController = require('../contollers/p2p');
 
 const { askAI } = require('../contollers/ai');
 
@@ -115,6 +116,23 @@ router.post('/api/shorts', authenticateToken, createShort);
 router.get('/api/shorts/container', getShortsContainer);
 router.put('/api/shorts/:id/tip', recordTip);
 
+// P2P Marketplace Routes
+router.post('/api/p2p/ads', p2pController.createAd);
+router.get('/api/p2p/ads', p2pController.getAds);
+router.get('/api/p2p/ads/user/:username', p2pController.getUserAds);
+
+router.post('/api/p2p/orders', p2pController.createOrder);
+router.get('/api/p2p/orders/user/:username', p2pController.getUserOrders);
+router.get('/api/p2p/orders/:id', p2pController.getOrder);
+router.put('/api/p2p/orders/:id/cancel', p2pController.cancelOrder);
+router.put('/api/p2p/orders/:id/confirm', p2pController.confirmPayment);
+router.put('/api/p2p/orders/:id/complete', p2pController.completeOrder);
+router.put('/api/p2p/ads/:id/close', p2pController.closeAd);
+router.put('/api/p2p/ads/:id', p2pController.updateAd);
+
+router.post('/api/p2p/bank-accounts', p2pController.addBankAccount);
+router.get('/api/p2p/bank-accounts/:username', p2pController.getBankAccounts);
+router.delete('/api/p2p/bank-accounts/:id', p2pController.deleteBankAccount);
 
 // AI Assistant 
 router.post("/api/ai/ask", askAI);

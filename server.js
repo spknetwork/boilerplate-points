@@ -40,7 +40,7 @@ const io = new Server(server, {
         callback(null, true);
       }
     },
-    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true
   },
   allowEIO3: true
@@ -58,7 +58,7 @@ app.use(express.json());
 app.use(cors({
   origin: true,
   credentials: true,
-  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
@@ -74,11 +74,15 @@ const Short = require("./models/Short.js");
 const { registerAddressMapping } = require('./contollers/webhook');
 
 io.on('connection', (socket) => {
+  console.log("⚡ [Socket] New raw connection established:", socket.id);
   const { username } = socket.handshake.query;
   if (username) {
     socket.join(username);
     onlineUsers.add(username);
     io.emit('online_users', Array.from(onlineUsers));
+    console.log(`👤 [Socket] Username paired: ${username}`);
+  } else {
+    console.log(`⚠️ [Socket] Connected without a username query parameter.`);
   }
 
   // Decentralized Address Registration: 
@@ -194,6 +198,63 @@ io.on('connection', (socket) => {
 
     } catch (err) {
       console.error("❌ [Socket] send_short error:", err.message);
+    }
+  });
+
+  // P2P Escrow Room & Chat Logging
+  socket.on('join_p2p_trade', (data) => {
+    const { orderId } = data;
+    if (orderId) socket.join(`p2p_${orderId}`);
+  });
+
+  socket.on('p2p_new_order', (data) => {
+    const { makerId, orderId, message } = data;
+    if (makerId) {
+      io.to(makerId).emit('p2p_notification', {
+        title: 'New P2P Escrow Match!',
+        message: message,
+        orderId: orderId
+      });
+    }
+  });
+
+  socket.on('p2p_order_status_update', (data) => {
+    const { orderId, status } = data;
+    if (orderId && status) {
+        io.to(`p2p_${orderId}`).emit('p2p_order_updated', { orderId, status });
+    }
+  });
+
+  socket.on('p2p_chat_message', async (data) => {
+    try {
+      console.log("📥 [Socket] Received P2P msg data:", data);
+      const { orderId, message, senderId } = data;
+      if (!orderId || !message || !senderId) {
+          console.log("❌ [Socket] Missing payload vars", { orderId, message, senderId });
+          return;
+      }
+
+      const P2POrder = require("./models/P2POrder.js");
+      const order = await P2POrder.findById(orderId);
+      
+      if (order) {
+        console.log("✅ [Socket] Order found mapped perfectly to:", orderId);
+        const msgDetails = { sender: senderId, text: message, timestamp: new Date() };
+        order.chatLog.push(msgDetails);
+        await order.save();
+        
+        console.log("📡 [Socket] Broadcasting to room:", `p2p_${orderId}`);
+        // Broadcast the validated message back to the active execution room
+        io.to(`p2p_${orderId}`).emit('p2p_new_message', {
+            senderId,
+            message,
+            timestamp: msgDetails.timestamp
+        });
+      } else {
+        console.log("❌ [Socket] Escrow Order not found in DB:", orderId);
+      }
+    } catch (err) {
+      console.error("❌ [Socket] p2p_chat_message error:", err.message);
     }
   });
 
