@@ -86,7 +86,16 @@ router.post('/lightning-account', createFreeLightAccount);
 router.get("/account-status/:username", getAccountStatus);
 
 /////admin
-router.post('/admin/login', loginAdmin)
+const treasuryController = require('../contollers/treasury');
+const disputeController = require('../contollers/disputes');
+router.post('/admin/login', loginAdmin);
+router.get('/admin/treasury/balances', verifyAdmin, treasuryController.getTreasuryBalances);
+router.get('/admin/treasury/swaps', verifyAdmin, treasuryController.getGlobalSwaps);
+router.get('/admin/treasury/profits', verifyAdmin, treasuryController.getProfitStats);
+router.post('/admin/treasury/sweep', verifyAdmin, treasuryController.sweepProfits);
+router.put('/admin/treasury/swap/:id/retry', verifyAdmin, treasuryController.retrySwap);
+router.get('/admin/disputes', verifyAdmin, disputeController.getDisputes);
+router.post('/admin/disputes/resolve', verifyAdmin, disputeController.resolveDispute);
 
 // Dynamic Config POC
 router.get('/config/:domain', getConfig);
@@ -126,6 +135,7 @@ router.get('/api/p2p/orders/user/:username', p2pController.getUserOrders);
 router.get('/api/p2p/orders/:id', p2pController.getOrder);
 router.put('/api/p2p/orders/:id/cancel', p2pController.cancelOrder);
 router.put('/api/p2p/orders/:id/confirm', p2pController.confirmPayment);
+router.put('/api/p2p/orders/:id/dispute', p2pController.openDispute);
 router.put('/api/p2p/orders/:id/complete', p2pController.completeOrder);
 router.put('/api/p2p/ads/:id/close', p2pController.closeAd);
 router.put('/api/p2p/ads/:id', p2pController.updateAd);
@@ -136,4 +146,10 @@ router.delete('/api/p2p/bank-accounts/:id', p2pController.deleteBankAccount);
 
 // AI Assistant 
 router.post("/api/ai/ask", askAI);
+
+// Automated Instant Swap Brokerage
+const swapController = require('../contollers/swap');
+router.post('/api/swap/initiate', authenticateToken, swapController.initiateSwap);
+router.get('/api/swap/order/:orderId', authenticateToken, swapController.getSwapOrder);
+
 module.exports = router;

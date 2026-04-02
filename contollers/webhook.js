@@ -31,6 +31,28 @@ const handleAlchemyWebhook = async (req, res) => {
             const { toAddress, value, asset, hash, category } = activity;
 
             if (!toAddress) continue;
+            
+            // --- NEW: Process Cross-Chain Swaps for EVM networks ---
+            try {
+                 const SwapOrder = require('../models/SwapOrder');
+                 const swapController = require('./swap');
+                 
+                 const pendingSwap = await SwapOrder.findOne({
+                     depositAddress: { $regex: new RegExp(`^${toAddress}$`, 'i') },
+                     status: 'PENDING'
+                 });
+
+                 if (pendingSwap && parseFloat(value) >= parseFloat(pendingSwap.amountExpected)) {
+                     pendingSwap.status = 'DEPOSIT_DETECTED';
+                     pendingSwap.txHashDeposit = hash;
+                     await pendingSwap.save();
+                     console.log(`✅ [Swap Matrix - Alchemy Webhook] Detected EVM deposit of ${value} ${asset} for order ${pendingSwap.orderId}. Initiating Cross-Chain Bridge!`);
+                     swapController.executeOutbound(pendingSwap.orderId).catch(e => console.error("Alchemy Webhook Execute Error", e));
+                 }
+            } catch(swapErr) {
+                 console.error("Alchemy Swap Processing Error:", swapErr);
+            }
+            // --------------------------------------------------------
 
             // Look up the username in our current active session cache
             const username = addressToUser.get(toAddress.toLowerCase());
