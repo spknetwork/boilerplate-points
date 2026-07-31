@@ -88,7 +88,8 @@ const getBalance = async (req, res) => {
                 username: cleanUsername,
                 communityId,
                 totalPoints: 0,
-                unclaimedPoints: 0
+                unclaimedPoints: 0,
+                cyberHighestStage: 1
             };
         }
 

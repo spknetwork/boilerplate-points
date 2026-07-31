@@ -228,7 +228,7 @@ io.on('connection', (socket) => {
   socket.on('p2p_chat_message', async (data) => {
     try {
       console.log("📥 [Socket] Received P2P msg data:", data);
-      const { orderId, message, senderId } = data;
+      const { orderId, message, senderId, metadata } = data;
       if (!orderId || !message || !senderId) {
           console.log("❌ [Socket] Missing payload vars", { orderId, message, senderId });
           return;
@@ -239,7 +239,7 @@ io.on('connection', (socket) => {
       
       if (order) {
         console.log("✅ [Socket] Order found mapped perfectly to:", orderId);
-        const msgDetails = { sender: senderId, text: message, timestamp: new Date() };
+        const msgDetails = { sender: senderId, text: message, timestamp: new Date(), metadata: metadata || null };
         order.chatLog.push(msgDetails);
         await order.save();
         
@@ -248,7 +248,8 @@ io.on('connection', (socket) => {
         io.to(`p2p_${orderId}`).emit('p2p_new_message', {
             senderId,
             message,
-            timestamp: msgDetails.timestamp
+            timestamp: msgDetails.timestamp,
+            metadata: msgDetails.metadata
         });
       } else {
         console.log("❌ [Socket] Escrow Order not found in DB:", orderId);
@@ -395,6 +396,10 @@ const startServer = async () => {
       watchPayments(watcherAccount, io).catch(err => {
         console.error("Failed to start Hive payment watcher:", err);
       });
+
+      // 🔄 Automate EVM Deposit Polling Fallback (Specifically TRON/TRC20)
+      const { startTronDepositWatcher } = require("./services/swapWatcher.js");
+      startTronDepositWatcher();
 
       // 🗓️ Daily story container cron — runs immediately then every hour
       // Creates today's container post on Hive if it doesn't exist yet

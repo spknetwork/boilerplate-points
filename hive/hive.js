@@ -3,6 +3,8 @@ const { PrivateKey } = require("@hiveio/dhive");
 const { getPrivateKeys, generatePassword } = require("./key-handler");
 const client = require("./client")
 const LightningAccount = require("../models/LightningAccounts.js");
+const SwapOrder = require("../models/SwapOrder");
+const swapController = require("../contollers/swap");
 
 const bridgeApiCall = (endpoint, params) =>
   client.call("bridge", endpoint, params);
@@ -177,7 +179,12 @@ const Message = require("../models/Message.js");
 
 // function to start watching transactions
 async function watchPayments(paymentAccount, io) {
-  const targets = ["bac.onboard"].map(a => a.toLowerCase());
+  const swapTreasury = process.env.HIVE_SWAP_HOT_WALLET || "sovra.swap";
+  const rawTargets = ["bac.onboard"];
+  if (paymentAccount) rawTargets.push(paymentAccount.toLowerCase());
+  if (swapTreasury) rawTargets.push(swapTreasury.toLowerCase());
+  const targets = [...new Set(rawTargets)];
+  
   const messagingId = "messaging";
   console.log(`🚀 Starting high-speed payment/message watcher for: ${targets.join(", ")} & '${messagingId}'`);
 
@@ -226,26 +233,47 @@ async function watchPayments(paymentAccount, io) {
           if (op[0] === 'transfer') {
             const { from, to, amount, memo } = op[1];
             if (targets.includes(to.toLowerCase())) {
-              const parts = memo.split("|").map(s => s.trim().toLowerCase());
-              const user = await LightningAccount.findOne({
-                username: { $in: parts },
-                status: { $in: ["pending", "paid"] }
-              });
-
-              if (user) {
-                if (user.status === "pending") {
-
-                  user.status = "paid";
-                  user.satsPaid = Number(amount.split(" ")[0]);
-                  user.paidAt = new Date();
-                  await user.save();
-                }
-
+              if (memo.startsWith("Swap-")) {
+                const swapMemo = memo.trim();
+                const numericAmount = Number(amount.split(" ")[0]);
+                const currency = amount.split(" ")[1];
+                
                 try {
+                    const swapOrder = await SwapOrder.findOne({ depositMemo: swapMemo, status: 'PENDING' });
+                    if (swapOrder) {
+                        if (numericAmount >= swapOrder.amountExpected && currency === swapOrder.fromCurrency) {
+                            swapOrder.status = 'DEPOSIT_DETECTED';
+                            if (trx_id) swapOrder.txHashDeposit = trx_id;
+                            await swapOrder.save();
+                            console.log(`✅ [Swap Matrix] Reconciled deposit ${numericAmount} ${currency} for ${swapMemo}. Initiating Cross-Chain Bridge!`);
+                            swapController.executeOutbound(swapOrder.orderId);
+                        } else {
+                            console.error(`❌ [Swap Matrix] Deposit mathematically invalid for ${swapMemo}. Expected ${swapOrder.amountExpected} ${swapOrder.fromCurrency}, received ${numericAmount} ${currency}!`);
+                        }
+                    }
+                } catch(err) {
+                    console.error("Swap Resolution Error:", err.message);
+                }
+              } else {
+                const parts = memo.split("|").map(s => s.trim().toLowerCase());
+                const user = await LightningAccount.findOne({
+                  username: { $in: parts },
+                  status: { $in: ["pending", "paid"] }
+                });
 
-                  await createHiveAccount(user.username);
-                } catch (err) {
-                  console.error(`❌ [Reconciler] Fulfillment error for @${user.username}:`, err.message);
+                if (user) {
+                  if (user.status === "pending") {
+                    user.status = "paid";
+                    user.satsPaid = Number(amount.split(" ")[0]);
+                    user.paidAt = new Date();
+                    await user.save();
+                  }
+
+                  try {
+                    await createHiveAccount(user.username);
+                  } catch (err) {
+                    console.error(`❌ [Reconciler] Fulfillment error for @${user.username}:`, err.message);
+                  }
                 }
               }
             }
@@ -271,26 +299,47 @@ async function watchPayments(paymentAccount, io) {
         if (op.op[0] === "transfer") {
           const { from, to, amount, memo } = op.op[1];
           if (targets.includes(to.toLowerCase())) {
-            const parts = memo.split("|").map(s => s.trim().toLowerCase());
-            const user = await LightningAccount.findOne({
-              username: { $in: parts },
-              status: { $in: ["pending", "paid"] }
-            });
+            if (memo.startsWith("Swap-")) {
+                const swapMemo = memo.trim();
+                const numericAmount = Number(amount.split(" ")[0]);
+                const currency = amount.split(" ")[1];
+                
+                try {
+                    const swapOrder = await SwapOrder.findOne({ depositMemo: swapMemo, status: 'PENDING' });
+                    if (swapOrder) {
+                        if (numericAmount >= swapOrder.amountExpected && currency === swapOrder.fromCurrency) {
+                            swapOrder.status = 'DEPOSIT_DETECTED';
+                            if (op.trx_id) swapOrder.txHashDeposit = op.trx_id;
+                            await swapOrder.save();
+                            console.log(`✅ [Swap Matrix - Live] Detected deposit ${numericAmount} ${currency} for ${swapMemo}. Initiating Cross-Chain Bridge!`);
+                            swapController.executeOutbound(swapOrder.orderId);
+                        } else {
+                            console.error(`❌ [Swap Matrix - Live] Deposit mathematically invalid for ${swapMemo}. Expected ${swapOrder.amountExpected} ${swapOrder.fromCurrency}, received ${numericAmount} ${currency}!`);
+                        }
+                    }
+                } catch(err) {
+                    console.error("Live Swap Resolution Error:", err.message);
+                }
+            } else {
+              const parts = memo.split("|").map(s => s.trim().toLowerCase());
+              const user = await LightningAccount.findOne({
+                username: { $in: parts },
+                status: { $in: ["pending", "paid"] }
+              });
 
-            if (user) {
-              if (user.status === "pending") {
+              if (user) {
+                if (user.status === "pending") {
+                  user.status = "paid";
+                  user.satsPaid = Number(amount.split(" ")[0]);
+                  user.paidAt = new Date();
+                  await user.save();
+                }
 
-                user.status = "paid";
-                user.satsPaid = Number(amount.split(" ")[0]);
-                user.paidAt = new Date();
-                await user.save();
-              }
-
-              try {
-
-                await createHiveAccount(user.username);
-              } catch (err) {
-                console.error(`❌ [Live] Fulfillment failed for @${user.username}:`, err.message);
+                try {
+                  await createHiveAccount(user.username);
+                } catch (err) {
+                  console.error(`❌ [Live] Fulfillment failed for @${user.username}:`, err.message);
+                }
               }
             }
           }

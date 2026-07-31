@@ -17,6 +17,8 @@ const p2pOrderSchema = new mongoose.Schema({
   },
   paymentDeadline: { type: Date, required: true },
   paymentMethodDetails: { type: mongoose.Schema.Types.Mixed }, // Which bank was requested
+  wasDisputed: { type: Boolean, default: false },
+  disputeResolvedBy: { type: String, enum: ['ADMIN', 'USER', null], default: null },
   chatLog: [{
       sender: String,
       text: String,

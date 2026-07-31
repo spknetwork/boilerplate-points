@@ -261,6 +261,27 @@ exports.confirmPayment = async (req, res) => {
     }
 };
 
+exports.openDispute = async (req, res) => {
+    try {
+        const { reason } = req.body;
+        const order = await P2POrder.findById(req.params.id);
+        if (!order) return res.status(404).json({ success: false, error: 'Order not found' });
+        
+        order.status = 'DISPUTED';
+        order.wasDisputed = true;
+        order.chatLog.push({
+            sender: 'system',
+            text: `🚨 DISPUTE ESCALATED: Trade locked for Arbitration. Reason: ${reason || 'Unspecified'}`,
+            timestamp: new Date(),
+            metadata: { event: 'DISPUTE_OPENED' }
+        });
+        await order.save();
+        res.status(200).json({ success: true, data: order });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
 exports.completeOrder = async (req, res) => {
     try {
         const order = await P2POrder.findById(req.params.id);
@@ -294,6 +315,9 @@ exports.completeOrder = async (req, res) => {
             return res.status(500).json({ success: false, error: 'Critical: Escrow keys missing from backend .env. Release aborted.' });
         }
 
+        if (order.status === 'DISPUTED' || order.wasDisputed) {
+            order.disputeResolvedBy = 'USER';
+        }
         order.status = 'COMPLETED';
         await order.save();
         res.status(200).json({ success: true, data: order });
