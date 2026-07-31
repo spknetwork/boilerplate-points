@@ -57,6 +57,15 @@ router.post('/api/v1/points/claim', authenticateToken, claimPoints);
 router.get('/api/v1/points/balance/:username/:communityId', getBalance);
 router.get('/api/v1/points/ledger/:username/:communityId', getLedger);
 
+// Game Monetization Routes
+const { buyPoints, treasurePayout, playStage, withdrawCrypto, saveProgress, spendPoints } = require('../contollers/gameController');
+router.post('/api/v1/games/buy-points', authenticateToken, buyPoints);
+router.post('/api/v1/games/treasure-payout', authenticateToken, treasurePayout);
+router.post('/api/v1/games/play-stage', authenticateToken, playStage);
+router.post('/api/v1/games/withdraw-crypto', authenticateToken, withdrawCrypto);
+router.post('/api/v1/games/save-progress', authenticateToken, saveProgress);
+router.post('/api/v1/games/spend-points', authenticateToken, spendPoints);
+
 //Transaction Routes
 router.post('/transactions/transfer', authenticateToken, transferPoints);
 // Legacy routes below were removed as they are unused or replaced by api/v1/points/ledger

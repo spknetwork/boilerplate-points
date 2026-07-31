@@ -23,6 +23,21 @@ const UserPointsSchema = new mongoose.Schema(
             default: 0,
             min: 0,
         },
+        hiveBalance: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+        hbdBalance: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+        cyberHighestStage: {
+            type: Number,
+            default: 1,
+            min: 1,
+        }
     },
     { timestamps: true }
 );
