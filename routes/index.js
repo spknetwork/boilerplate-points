@@ -80,6 +80,10 @@ router.get('/check-env-file', checkEnvFile);
 router.get('/run-docker', runDocker);
 router.post('/register-community', registerCommunity);
 
+// Community Tokens
+const { deployToken, relayTokenTransfer } = require('../contollers/communityTokens');
+router.post('/api/tokens/deploy', deployToken);
+router.post('/api/tokens/relay', authenticateToken, relayTokenTransfer);
 
 /////////bitcoin
 router.post('/create-account', createBtcMachineAccount)

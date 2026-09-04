@@ -30,6 +30,18 @@ const communityConfigSchema = new mongoose.Schema({
     type: String,
     default: "A decentralized community powered by Breakaway.",
   },
+  nativeTokenTicker: {
+    type: String,
+    default: "HIVE" // HIVE by default, or SOVRA, etc.
+  },
+  nativeTokenNetwork: {
+    type: String,
+    default: "HIVE" // HIVE, BASE, POLYGON, SOL, etc.
+  },
+  nativeTokenAddress: {
+    type: String,
+    default: "" // The contract/mint address if it's on an external chain
+  },
   communityDescriptionExtra: {
     type: String,
   },
