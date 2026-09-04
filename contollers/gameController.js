@@ -244,7 +244,7 @@ const treasurePayout = async (req, res) => {
  */
 const withdrawCrypto = async (req, res) => {
     try {
-        const { username, communityId } = req.body;
+        const { username, communityId, coin } = req.body;
         if (!username) return res.status(400).json({ success: false, msg: "Missing username" });
 
         const cleanUsername = username.toLowerCase();
@@ -253,11 +253,17 @@ const withdrawCrypto = async (req, res) => {
         let userPoints = await UserPoints.findOne({ username: cleanUsername, communityId: cid });
         if (!userPoints) return res.status(400).json({ success: false, msg: "No record found" });
 
-        const withdrawHive = userPoints.hiveBalance || 0;
-        const withdrawHbd = userPoints.hbdBalance || 0;
+        let withdrawHive = userPoints.hiveBalance || 0;
+        let withdrawHbd = userPoints.hbdBalance || 0;
+
+        if (coin === 'HIVE') {
+            withdrawHbd = 0;
+        } else if (coin === 'HBD') {
+            withdrawHive = 0;
+        }
 
         if (withdrawHive <= 0 && withdrawHbd <= 0) {
-            return res.status(400).json({ success: false, msg: "No crypto to withdraw." });
+            return res.status(400).json({ success: false, msg: `No ${coin || 'crypto'} to withdraw.` });
         }
 
         if (!PLATFORM_ACTIVE_KEY) {
@@ -289,8 +295,8 @@ const withdrawCrypto = async (req, res) => {
         await client.broadcast.sendOperations(operations, activeKey);
 
         // Reset balances
-        userPoints.hiveBalance = 0;
-        userPoints.hbdBalance = 0;
+        if (withdrawHive > 0) userPoints.hiveBalance = 0;
+        if (withdrawHbd > 0) userPoints.hbdBalance = 0;
         await userPoints.save();
 
         return res.status(200).json({ success: true, msg: "Successfully withdrawn to your wallet!" });
