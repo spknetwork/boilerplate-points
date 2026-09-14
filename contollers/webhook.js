@@ -2,6 +2,17 @@
 // Keys are normalized to lowercase addresses
 const addressToUser = new Map();
 
+// In-memory cache of recently processed transaction hashes to prevent duplicate webhook notifications
+const recentProcessedHashes = new Set();
+const isHashAlreadyProcessed = (hash) => {
+    if (!hash) return false;
+    const lower = hash.toLowerCase();
+    if (recentProcessedHashes.has(lower)) return true;
+    recentProcessedHashes.add(lower);
+    setTimeout(() => recentProcessedHashes.delete(lower), 10 * 60 * 1000); // 10-minute TTL
+    return false;
+};
+
 /**
  * Register an address to a user (called via Socket)
  */
@@ -31,6 +42,12 @@ const handleAlchemyWebhook = async (req, res) => {
             const { toAddress, value, asset, hash, category } = activity;
 
             if (!toAddress) continue;
+            
+            // Deduplicate: If this transaction hash was processed within the last 10 minutes, ignore duplicate deliveries
+            if (hash && isHashAlreadyProcessed(hash)) {
+                console.log(`[Webhook] Skipping duplicate webhook delivery for tx hash: ${hash}`);
+                continue;
+            }
             
             // --- NEW: Process Cross-Chain Swaps for EVM networks ---
             try {
